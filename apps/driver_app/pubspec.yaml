@@ -1,0 +1,45 @@
+name: taxi_assist_driver
+description: Taxi Assist Driver App — Flutter + Supabase + Riverpod.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_dotenv: ^5.1.0
+  supabase_flutter: ^2.8.0
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+  google_maps_flutter: ^2.9.0
+  geolocator: ^13.0.1
+  permission_handler: ^11.3.1
+  uuid: ^4.5.1
+  intl: ^0.19.0
+  fluttertoast: ^8.2.8
+  image_picker: ^1.1.2
+  file_picker: ^8.1.4
+  url_launcher: ^6.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.13
+  riverpod_generator: ^2.4.0
+
+# Some Android plugins use `flutter.compileSdkVersion` inside `android { }`; AGP then
+# resolves `flutter` on LibraryExtension and the build fails. Pin versions that use a
+# fixed compileSdk until Flutter/Gradle resolves this pattern everywhere.
+dependency_overrides:
+  app_links: 6.4.0
+  geolocator_android: 4.6.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/default.env
+
+# Codegen: dart run build_runner build --delete-conflicting-outputs

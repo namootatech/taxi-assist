@@ -1,0 +1,388 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../core/constants/app_spacing.dart';
+import '../../core/utils/toast.dart';
+import '../../shared/providers/app_providers.dart';
+import 'models/location_point.dart';
+import 'models/trip.dart';
+import 'models/trip_status.dart';
+import 'trip_providers.dart';
+
+/// Live map + lifecycle actions (Prompt 5, PRD §5.4).
+class ActiveTripScreen extends ConsumerStatefulWidget {
+  const ActiveTripScreen({super.key, required this.trip});
+
+  final Trip trip;
+
+  @override
+  ConsumerState<ActiveTripScreen> createState() => _ActiveTripScreenState();
+}
+
+class _ActiveTripScreenState extends ConsumerState<ActiveTripScreen> {
+  Timer? _locationTimer;
+  Position? _lastPosition;
+  bool _destinationBannerDismissed = false;
+
+  Trip get t => widget.trip;
+
+  LatLng get _pickup => LatLng(
+        t.pickupLat ?? -33.9249,
+        t.pickupLng ?? 18.4241,
+      );
+
+  LatLng get _dropoff => LatLng(
+        t.dropoffLat ?? _pickup.latitude,
+        t.dropoffLng ?? _pickup.longitude,
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    _syncLocationTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant ActiveTripScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.trip.tripId != widget.trip.tripId) {
+      _destinationBannerDismissed = false;
+    }
+    if (oldWidget.trip.status != widget.trip.status) {
+      _syncLocationTimer();
+    }
+  }
+
+  void _syncLocationTimer() {
+    _locationTimer?.cancel();
+    if (widget.trip.status == TripStatus.inProgress) {
+      _locationTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+        unawaited(_pushLocationSample());
+      });
+      unawaited(_pushLocationSample());
+    }
+  }
+
+  Future<void> _pushLocationSample() async {
+    try {
+      final p = await Geolocator.getCurrentPosition();
+      _lastPosition = p;
+      final svc = ref.read(tripServiceProvider);
+      await svc.updateDriverLocation(
+        widget.trip.tripId,
+        p.latitude,
+        p.longitude,
+        p.speed,
+      );
+      await svc.flushPendingLocations();
+      if (mounted) setState(() {});
+    } catch (e) {
+      showAppToast('Location update queued: $e');
+    }
+  }
+
+  Future<void> _openNav(LatLng target) async {
+    final uri = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=${target.latitude},${target.longitude}&travelmode=driving',
+    );
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      showAppToast('Could not open Maps');
+    }
+  }
+
+  Future<void> _endTripFlow() async {
+    final fareCtrl = TextEditingController(
+      text: t.estimatedFare?.toStringAsFixed(2) ?? '',
+    );
+    final dist = _lastPosition != null
+        ? ref.read(tripServiceProvider).distanceMetersBetween(
+              LocationPoint(
+                latitude: t.pickupLat ?? _pickup.latitude,
+                longitude: t.pickupLng ?? _pickup.longitude,
+              ),
+              LocationPoint(
+                latitude: _lastPosition!.latitude,
+                longitude: _lastPosition!.longitude,
+              ),
+            )
+        : null;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('End trip'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: fareCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Final fare (R)',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            ),
+            if (dist != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text('Approx. distance: ${(dist / 1000).toStringAsFixed(1)} km'),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Complete')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    final fare = double.tryParse(fareCtrl.text.trim());
+    try {
+      await ref.read(tripServiceProvider).endTrip(
+            t.tripId,
+            finalFare: fare,
+            finalDistance: dist,
+          );
+      if (!mounted) return;
+      await _ratingDialog();
+    } catch (e) {
+      showAppToast('$e', long: true);
+    }
+  }
+
+  Future<void> _ratingDialog() async {
+    final stars = ValueNotifier<int>(5);
+    final comment = TextEditingController();
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Rate rider'),
+          content: ValueListenableBuilder<int>(
+            valueListenable: stars,
+            builder: (context, value, _) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (i) {
+                    final idx = i + 1;
+                    return IconButton(
+                      onPressed: () => stars.value = idx,
+                      icon: Icon(
+                        idx <= value ? Icons.star : Icons.star_border,
+                        color: Colors.amber,
+                      ),
+                    );
+                  }),
+                ),
+                TextField(
+                  controller: comment,
+                  decoration: const InputDecoration(
+                    labelText: 'Comment (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () async {
+                try {
+                  await ref.read(tripServiceProvider).submitDriverRating(
+                        t.tripId,
+                        stars: stars.value,
+                        comment:
+                            comment.text.trim().isEmpty ? null : comment.text.trim(),
+                      );
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  showAppToast('Thanks for your feedback');
+                } catch (e) {
+                  showAppToast('$e');
+                }
+              },
+              child: const Text('Submit'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      stars.dispose();
+      comment.dispose();
+    }
+  }
+
+  @override
+  void dispose() {
+    _locationTimer?.cancel();
+    unawaited(ref.read(tripServiceProvider).flushPendingLocations());
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final live = _lastPosition;
+    final driverLatLng = live != null
+        ? LatLng(live.latitude, live.longitude)
+        : _pickup;
+
+    return Scaffold(
+      appBar: AppBar(title: Text('Trip · ${tripStatusToApi(t.status)}')),
+      body: Column(
+        children: [
+          if (t.shouldShowDestinationBanner && !_destinationBannerDismissed)
+            MaterialBanner(
+              content: const Text('Rider updated the destination. Check the map.'),
+              actions: [
+                TextButton(
+                  onPressed: () =>
+                      setState(() => _destinationBannerDismissed = true),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          Expanded(
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(target: driverLatLng, zoom: 14),
+              markers: {
+                Marker(markerId: const MarkerId('pickup'), position: _pickup),
+                Marker(
+                  markerId: const MarkerId('drop'),
+                  position: _dropoff,
+                  icon: BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueAzure,
+                  ),
+                ),
+                Marker(
+                  markerId: const MarkerId('me'),
+                  position: driverLatLng,
+                  icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+                ),
+              },
+              polylines: {
+                Polyline(
+                  polylineId: const PolylineId('line'),
+                  color: Colors.blue,
+                  width: 4,
+                  points: [_pickup, _dropoff],
+                ),
+              },
+              myLocationEnabled: true,
+              onMapCreated: (c) {
+                ref.read(tripMapControllerProvider.notifier).state = c;
+              },
+            ),
+          ),
+          Padding(
+            padding: AppSpacing.screenPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Payment: ${t.paymentMethodLabel}',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                if (t.estimatedDurationSec != null)
+                  Text(
+                    'ETA hint: ~${(t.estimatedDurationSec! / 60).ceil()} min',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (t.status == TripStatus.enRoutePickup) ...[
+                      OutlinedButton.icon(
+                        onPressed: () => _openNav(_pickup),
+                        icon: const Icon(Icons.navigation),
+                        label: const Text('Nav to pickup'),
+                      ),
+                      FilledButton(
+                        onPressed: () async {
+                          try {
+                            await ref.read(tripServiceProvider).arrivedAtPickup(t.tripId);
+                          } catch (e) {
+                            showAppToast('$e');
+                          }
+                        },
+                        child: const Text('Arrived at pickup'),
+                      ),
+                    ],
+                    if (t.status == TripStatus.arrivedPickup)
+                      FilledButton(
+                        onPressed: () async {
+                          try {
+                            await ref.read(tripServiceProvider).startTrip(t.tripId);
+                          } catch (e) {
+                            showAppToast('$e');
+                          }
+                        },
+                        child: const Text('Start trip'),
+                      ),
+                    if (t.status == TripStatus.inProgress) ...[
+                      OutlinedButton.icon(
+                        onPressed: () => _openNav(_dropoff),
+                        icon: const Icon(Icons.navigation),
+                        label: const Text('Nav to drop-off'),
+                      ),
+                      FilledButton(
+                        onPressed: _endTripFlow,
+                        child: const Text('End trip'),
+                      ),
+                    ],
+                    if (t.status == TripStatus.enRoutePickup ||
+                        t.status == TripStatus.arrivedPickup)
+                      TextButton(
+                        onPressed: () async {
+                          final ok = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Cancel trip?'),
+                              content: const Text(
+                                'PRD: cancelling before pickup may take you offline.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('No'),
+                                ),
+                                FilledButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Yes, cancel'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (ok == true && mounted) {
+                            try {
+                              await ref.read(tripServiceProvider).cancelEnRoute(t.tripId);
+                              await ref
+                                  .read(supabaseServiceProvider)
+                                  .updateProfile({'online_status': 'OFFLINE'});
+                              showAppToast('Trip cancelled — you are offline.');
+                            } catch (e) {
+                              showAppToast('$e');
+                            }
+                          }
+                        },
+                        child: const Text('Cancel trip'),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

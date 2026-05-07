@@ -1,0 +1,14 @@
+{
+  "name": "trip-platform",
+  "private": true,
+  "packageManager": "pnpm@10",
+  "workspaces": [
+    "apps/admin_app"
+  ],
+  "scripts": {
+    "dev:admin": "pnpm -C apps/admin_app dev",
+    "build:admin": "pnpm -C apps/admin_app build",
+    "lint:admin": "pnpm -C apps/admin_app lint"
+  }
+}
+
