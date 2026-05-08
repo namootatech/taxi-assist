@@ -146,3 +146,84 @@ Acceptance criteria:
   - verification approve/reject flow
   - trips list loads
 
+### 10) Trip Media admin console (built May 2026)
+
+The Trip Media console lives under two parents:
+
+- `/creatives` and `/ads` — kept at their original URLs for backward compatibility.
+- `/trip-media/*` — overview, advertisers, rider-rewards, fraud, analytics, reports, settings.
+
+The sidebar groups all of them under a "Trip Media" group. RBAC additions are documented in `user-roles-and-permissions.md`.
+
+#### File map
+
+```
+apps/admin_app/
+├── app/
+│   ├── (dashboard)/
+│   │   ├── creatives/
+│   │   │   ├── CreativesQueue.tsx      # client: queue + review panel
+│   │   │   └── page.tsx                # server: data + signed URLs
+│   │   ├── ads/
+│   │   │   ├── CampaignsConsole.tsx    # client: filters + drawer
+│   │   │   └── page.tsx                # server: campaigns + counts
+│   │   └── trip-media/
+│   │       ├── overview/page.tsx
+│   │       ├── advertisers/{page.tsx, [id]/AdvertiserActions.tsx, [id]/page.tsx}
+│   │       ├── rider-rewards/{RewardActions.tsx, page.tsx}
+│   │       ├── fraud/{FraudConsole.tsx, page.tsx}
+│   │       ├── analytics/page.tsx
+│   │       ├── reports/page.tsx
+│   │       └── settings/{SettingsForms.tsx, page.tsx}
+│   └── api/trip-media/reports/[kind]/route.ts   # CSV streamer
+├── components/trip-media/
+│   ├── PromptDialog.tsx                # accessible prompt-with-textarea
+│   └── Surface.tsx                     # Panel, KpiCard, StatusPill, …
+└── lib/trip-media/
+    ├── advertisers.ts        # list + detail loaders
+    ├── analytics.ts          # 14-day analytics bundle
+    ├── campaigns.ts          # campaign loaders
+    ├── creatives.ts          # creative queue + signed URLs
+    ├── format.ts             # ZAR currency, dates, percentages
+    ├── fraud.ts              # signals, candidates, counts
+    ├── policy-constants.ts   # default reasons, risk options, settings keys
+    ├── queries.ts            # overview KPIs + recent actions
+    ├── reports.ts            # report definitions + CSV builders
+    ├── rewards.ts            # recent / holds / wallet trails
+    ├── role-content.ts       # role explainer copy
+    ├── server-actions.ts     # all RPC calls behind one module
+    └── settings.ts           # JSONB settings + parsers
+```
+
+#### Route gating
+
+`apps/admin_app/proxy.ts` adds:
+
+```ts
+{ prefix: "/creatives", capability: "moderate_creatives" },
+{ prefix: "/trip-media/overview", capability: "view_trip_media_overview" },
+{ prefix: "/trip-media/advertisers", capability: "view_advertisers" },
+{ prefix: "/trip-media/rider-rewards", capability: "view_rider_rewards" },
+{ prefix: "/trip-media/fraud", capability: "view_fraud" },
+{ prefix: "/trip-media/analytics", capability: "view_trip_media_analytics" },
+{ prefix: "/trip-media/reports", capability: "view_reports" },
+{ prefix: "/trip-media/settings", capability: "manage_trip_media_settings" },
+{ prefix: "/trip-media", capability: "view_trip_media" }, // catch-all
+```
+
+The catch-all sits last so each leaf prefix wins by specificity. Unknown sub-paths fall back to the broad `view_trip_media` check.
+
+#### Form discipline
+
+Every form on the new surfaces uses `react-hook-form` + `zod` + `sonner`. The shared `PromptDialog` replaces native `window.prompt` for short reason capture, with focus management, ESC-to-close, and minimum-length validation.
+
+#### CSV reports
+
+`/api/trip-media/reports/[kind]` reads with the user's session, calls `admin_record_report_run` after the CSV is built, streams `text/csv` with `Cache-Control: no-store`, and returns a JSON error envelope on failure. Four kinds today: `creative_actions`, `campaign_actions`, `reward_ledger`, `fraud_signals`.
+
+#### What is intentionally out of scope (today)
+
+- Coverage by city — we surface an explicit empty state on `/trip-media/analytics` until the rider client emits trip city.
+- Inline rider/trip drilldowns from the Fraud console — IDs are shown, deep links land on the existing rider/trip pages.
+- Bulk actions across the queue — every action is per-row to keep audit trails clean.
+

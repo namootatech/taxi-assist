@@ -2,7 +2,7 @@
 
 **Source:** codebase scan 2026-05-08.
 
-Tables below now have implementation anchors in `supabase/migrations/20260508073600_trip_media_partner_core.sql` and RLS/storage anchors in `supabase/migrations/20260508073700_trip_media_partner_policies.sql`. Production provider credentials and live subscription verification remain pending.
+Tables below have implementation anchors in `supabase/migrations/20260508073600_trip_media_partner_core.sql`, RLS/storage anchors in `supabase/migrations/20260508073700_trip_media_partner_policies.sql`, and invite/notification anchors in `supabase/migrations/20260508120000_trip_media_partner_invites.sql`. Production provider credentials and live subscription verification remain pending.
 
 ## Core entities
 
@@ -62,18 +62,53 @@ Tables below now have implementation anchors in `supabase/migrations/20260508073
 - `creative_id` → `ad_creatives` (or join table if multi-creative rotation)
 - `impression_cap`, `schedule_band` (enum matching product: peak, off_peak, all_day, night, all)
 - `subscription_id` (optional FK for traceability)
+- `start_date`, `end_date` (campaign window driven by partner-side scheduling)
+- `submitted_at`, `activated_at` (lifecycle audit set by `submitCampaignForReview` / activation)
+- `review_note` (admin moderation feedback surfaced to partner)
+- `status` allowed values: `DRAFT`, `PENDING_REVIEW`, `ACTIVE`, `PAUSED`, `COMPLETED`, `ENDED`, `REJECTED`
+
+### `partner_invites` (link-shareable invites, no email delivery required)
+
+- `id` (uuid, PK)
+- `partner_id` → `media_partners`
+- `email` (citext) — invitee address; matched against `auth.users.email` on accept
+- `role` (`owner` | `admin` | `operator` | `viewer`) — owners cannot be invited; locked to non-owner roles in UI
+- `token` (text, unique, not null) — opaque random token used in `?invite=<token>`
+- `invited_by` → `auth.users`
+- `expires_at` (timestamptz, default 7 days)
+- `accepted_at`, `revoked_at` (nullable audit timestamps)
+- `created_at`, `updated_at`
+- Partial unique index on `(partner_id, lower(email))` where `accepted_at is null and revoked_at is null` (one live invite per email per partner).
+- RLS: `select` where `is_partner_member(partner_id)`; insert/update where `partner_role(partner_id) in ('owner','admin')`.
+
+### `partner_notifications`
+
+- `id` (uuid, PK)
+- `partner_id` → `media_partners`
+- `kind` (`info` | `success` | `warning` | `error`)
+- `title`, `body`, `link` (nullable)
+- `read_at` (nullable), `created_at`
+- RLS: `select` and `update` (mark read) where `is_partner_member(partner_id)`; insert is performed by service role or `SECURITY DEFINER` RPCs only.
+
+### RPCs (in `public`, granted appropriately)
+
+- `public.get_partner_invite_preview(p_token text)` — `SECURITY DEFINER`, granted to `anon, authenticated`. Returns `partner_name, role, email, is_expired, is_revoked, is_accepted` for the invite acceptance preview. Returns minimal data so an unauthenticated user can render the accept form.
+- `public.accept_partner_invite(p_token text)` — `SECURITY DEFINER`, granted to `authenticated`. Validates the token, ensures invite email matches `auth.users.email` of `auth.uid()`, upserts the matching `partner_members` row to attach `user_id` and `joined_at`, and marks the invite accepted. Idempotent.
 
 ## Relationships
 
-- One partner → many members, creatives, campaigns, one active subscription convention (enforce in app or partial unique index).
+- One partner → many members, invites, creatives, campaigns, notifications, and one active subscription convention (enforce in app or partial unique index).
+- `partner_invites` is the lifecycle source of truth for pending invites; `partner_members` rows are created at invite time without `user_id`/`joined_at` and are linked to a real `auth.users` id only when `accept_partner_invite` succeeds.
 - Package catalog is seeded with `starter`, `growth`, and `network`.
-- Partner signup creates a partner, owner membership, starter trial subscription, and welcome credits when service-role env vars are configured.
+- Partner signup creates a partner, owner membership, starter trial subscription, welcome credits, and a welcome `partner_notifications` row when service-role env vars are configured.
 
 ## CRUD rules
 
 - Partners CRUD their creatives and campaigns subject to RLS + caps.
 - Admin can update `ad_creatives.status` and force campaign `paused`.
 - Ledger/credit decrement: prefer **RPC** or **Edge Function** to avoid race conditions.
+- Invites are managed by `owner | admin` only; acceptance is performed via `public.accept_partner_invite` so RLS is satisfied by `SECURITY DEFINER`, not by exposing an INSERT path on `partner_members` to the invitee.
+- Notifications are emitted by signup, server actions (e.g. campaign submit/activate/reject), and webhook handlers; UI can only flip `read_at`.
 
 ## Confidence
 

@@ -255,3 +255,120 @@
 This spec provides a production-ready foundation for engineering the admin backend (entities, services, workflows) and UI. It is designed for rapid iteration while protecting the platform moat through strong compliance and fraud controls.
 
 Ready for database schema derivation, API spec, or Cursor implementation prompts. Let me know the next artifact needed.
+
+---
+
+### 11. Trip Media — Admin Oversight Schema (added May 2026)
+
+The Trip Media admin console relies on the following tables and views.
+
+#### Extended core tables
+
+`public.ad_creatives` — additional columns
+
+| Column            | Type        | Purpose                                          |
+| ----------------- | ----------- | ------------------------------------------------ |
+| `category`        | text        | Industry tag (`retail`, `telco`, `fintech`, …)   |
+| `policy_decision` | text        | Slug of the rejection reason (when rejected)     |
+| `last_action_at`  | timestamptz | When the creative last had an admin action       |
+| `last_action_by`  | uuid        | Admin user that took the last action             |
+| `flagged_at`      | timestamptz | First time it was flagged                        |
+| `suspended_at`    | timestamptz | When it was suspended                            |
+
+`ad_creatives.status` enum check now includes `pending_review`, `approved`, `rejected`, `changes_requested`, `flagged`, `suspended`, `draft`.
+
+`public.ad_campaigns` — additional columns
+
+| Column                  | Type        | Purpose                                  |
+| ----------------------- | ----------- | ---------------------------------------- |
+| `force_stop_reason`     | text        | Why the campaign was force-stopped       |
+| `force_stopped_by`      | uuid        | Admin who force-stopped it               |
+| `force_stopped_at`      | timestamptz | When it was force-stopped                |
+| `last_admin_action_at`  | timestamptz | Last admin touch                         |
+| `last_admin_action_by`  | uuid        | Admin user                               |
+
+`ad_campaigns.status` enum now includes `DRAFT`, `PENDING_REVIEW`, `ACTIVE`, `PAUSED`, `REJECTED`, `COMPLETED`, `ENDED`, `FORCE_STOPPED`.
+
+#### New tables
+
+`public.creative_categories` — seed reference list of allowed creative categories. Slug, label, sort order.
+
+`public.ad_fraud_signals` — every fraud signal opened by an admin or by an automated job.
+
+| Column            | Type        | Notes                                                              |
+| ----------------- | ----------- | ------------------------------------------------------------------ |
+| `id`              | uuid        | PK                                                                 |
+| `kind`            | text        | `rapid_completion`, `multi_device`, `emulator`, `shared_ip`, …    |
+| `level`           | text        | `low` / `medium` / `high` / `critical`                             |
+| `status`          | text        | `open` / `investigating` / `resolved` / `dismissed` / `escalated`  |
+| `summary`         | text        | One-line description of the signal                                 |
+| `evidence`        | jsonb       | Structured payload describing the signal                           |
+| `rider_id`        | uuid        | Optional foreign key                                               |
+| `trip_id`         | uuid        | Optional foreign key                                               |
+| `ad_view_id`      | uuid        | Optional foreign key                                               |
+| `campaign_id`     | uuid        | Optional foreign key                                               |
+| `partner_id`      | uuid        | Optional foreign key                                               |
+| `owner_admin_id`  | uuid        | Admin assigned to the case                                         |
+| `resolution_note` | text        | Latest admin note                                                  |
+| `created_at`      | timestamptz |                                                                    |
+| `resolved_at`     | timestamptz | Set when status moves to a closed state                            |
+
+`public.ad_reward_holds` — every freeze or reverse on a rider reward.
+
+| Column             | Type    | Notes                                          |
+| ------------------ | ------- | ---------------------------------------------- |
+| `id`               | uuid    | PK                                             |
+| `ad_view_id`       | uuid    | The ad view this hold relates to               |
+| `rider_id`         | uuid    | Cached for filtering                           |
+| `campaign_id`      | uuid    | Cached for filtering                           |
+| `amount_cents`     | int     | Frozen / reversed amount                       |
+| `status`           | text    | `frozen` / `released` / `reversed`             |
+| `reason`           | text    | Required                                       |
+| `reverse_tx_id`    | uuid    | Wallet transaction id when reversed            |
+| `fraud_signal_id`  | uuid    | Optional link to the originating signal        |
+| `created_by`       | uuid    | Admin user                                     |
+| `created_at`       | timestamptz |                                            |
+| `released_at`      | timestamptz | When the hold was released                 |
+| `reversed_at`      | timestamptz | When the wallet was debited                |
+
+`public.trip_media_settings` — JSONB-backed key/value store. Seeded with `reward_caps`, `rejection_reasons`, `risk_thresholds`, `watch_rules`.
+
+`public.admin_report_runs` — audit trail for every report download.
+
+| Column          | Type        | Notes                                  |
+| --------------- | ----------- | -------------------------------------- |
+| `id`            | uuid        | PK                                     |
+| `kind`          | text        | One of the four report kinds           |
+| `params`        | jsonb       | Input parameters                       |
+| `row_count`     | int         | Rows returned                          |
+| `status`        | text        | `running` / `completed` / `failed`     |
+| `error_message` | text        | Set when failed                        |
+| `started_at`    | timestamptz |                                        |
+| `finished_at`   | timestamptz |                                        |
+| `actor_user_id` | uuid        | Admin who ran the report               |
+
+#### Views
+
+- `public.vw_trip_media_overview` — KPI counts for the overview page (pending creatives, active campaigns, advertisers, rider views in 24h, completion rate, reward spend, fraud signals).
+- `public.vw_fraud_candidates` — riders whose recent activity crossed the configured thresholds (rapid completions, rejected views, credited views in last 24h).
+
+#### RPCs
+
+All RPCs live in `public`, are `SECURITY DEFINER`, and return JSONB shaped as `{ ok, error?, ...payload }`. Each RPC checks `admin_profiles.role` against an allowlist and writes to `audit_logs`.
+
+| RPC                                  | Purpose                                            |
+| ------------------------------------ | -------------------------------------------------- |
+| `admin_set_creative_status`          | Approve, reject, request changes, suspend, flag    |
+| `admin_set_campaign_status`          | Pause, resume, force-stop                          |
+| `admin_adjust_campaign_delivery`     | Change view cap or per-view reward                 |
+| `admin_freeze_reward`                | Open a hold against a credited reward              |
+| `admin_reverse_reward`               | Reverse a credited reward and record wallet entry  |
+| `admin_log_fraud_signal`             | Create a fraud signal                              |
+| `admin_set_fraud_signal_status`      | Move a signal across status states                 |
+| `admin_set_fraud_signal_level`       | Change the risk level                              |
+| `admin_set_partner_status`           | Suspend or restore an advertiser workspace         |
+| `admin_adjust_partner_credits`       | Apply a manual promotional credit adjustment       |
+| `admin_set_trip_media_setting`       | Update one of the JSONB settings rows              |
+| `admin_record_report_run`            | Audit a report download                            |
+
+The migration that introduces all of the above is `supabase/migrations/20260508140000_trip_media_admin_oversight.sql`. Storage policy on `partner-ad-creatives` was extended so admins can read any object for signed-URL preview.

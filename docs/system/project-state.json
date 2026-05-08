@@ -30,7 +30,10 @@
     "web-server-action-diagnostics-2026-05-08",
     "trip-media-existing-user-signup-recovery-2026-05-08",
     "trip-media-dashboard-cta-and-setup-routing-2026-05-08",
-    "trip-website-rider-updates-cta-fix-2026-05-08"
+    "trip-website-rider-updates-cta-fix-2026-05-08",
+    "trip-media-web-portal-buildout-2026-05-08",
+    "admin-trip-media-buildout-2026-05-08",
+    "clerk-supabase-native-jwt-sub-and-webhook-2026-05-08"
   ],
   "pending": [
     "apps-rider-app-scaffold",
@@ -44,14 +47,15 @@
     "replace-driver-placeholder-smoke-test",
     "trip-web-ga4-web-streams",
     "trip-media-payfast-live-smoke-test",
-    "trip-website-crm-sync"
+    "trip-website-crm-sync",
+    "deploy-clerk-webhook-edge-function"
   ],
   "apps": {
     "driver_app": "in-progress",
     "admin_app": "in-progress",
     "rider_app": "planning",
-    "trip_media_web": "in-progress",
+    "trip_media_web": "core-complete",
     "trip_website": "in-progress"
   },
-  "notes": "Trip Website rider updates CTA 2026-05-08 now falls back to /contact?topic=rider instead of the missing #notify-rider anchor, and the homepage hero CTA uses that same rider update path. Trip Media dashboard CTA/routing 2026-05-08 made Add creatives, Plan campaigns, and Invite the team high-contrast CTA cards and fixed the signed-in no-partner redirect loop by allowing /signup?setup=partner as a workspace completion flow. Signup diagnostics 2026-05-08 added privacy-safe server action logs across trip_media_web, trip_website, and admin_app; Trip Media signup now recovers existing-user signup attempts by signing in and ensuring a partner workspace. Applied remote Supabase migrations for marketing_leads and Trip Media partner tables/policies to project twemeqotfdbgfbrrztcd. Remaining priority gaps: apps-rider-app-scaffold, storage privacy hardening, rider trip request/location write paths, admin Next proxy migration, replacing the driver placeholder smoke test, trip-web-ga4-web-streams, trip-media-payfast-live-smoke-test, and trip-website-crm-sync."
+  "notes": "Clerk + Supabase native integration cleanup 2026-05-08: removed Supabase session exchange/logout routes in admin_app + trip_media_web, updated Clerk auth clients to redirect directly after sign-in, standardized lib/supabase exports, removed Trip Media legacy Supabase password auth actions/forms, added Supabase Edge Function supabase/functions/clerk-webhook for user sync, and added migration supabase/migrations/20260508192911_clerk_profiles.sql (RLS keyed off auth.jwt()->>'sub'). Remaining follow-up: deploy the clerk-webhook Edge Function + configure CLERK_WEBHOOK_SECRET in Supabase."
 }

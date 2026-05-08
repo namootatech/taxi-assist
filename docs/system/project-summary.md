@@ -29,7 +29,7 @@ Global Cursor rules may reference **numbered** platform files (`01-product-visio
 ## Key constraints
 
 - Compliance-first onboarding; document expiry; pilot corridors.
-- No duplicate auth systems—Supabase Auth only.
+- No duplicate auth systems—**Clerk is the primary auth**, Supabase is the RLS-enforced data plane. Flutter driver auth migration to Clerk is still pending.
 - Remaining schema/product gaps: production Payfast credential/callback verification, GA4 web streams, Trip Website CRM sync, storage privacy hardening, **rider trip request + rider trip_locations write**, and deeper admin operations flows. Current drift is documented in `docs/system/drift-report.md`.
 
 ## Seed & test users

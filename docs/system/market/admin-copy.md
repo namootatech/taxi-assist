@@ -68,6 +68,36 @@ Use **Continue** only in multi-step wizards where it is standard.
 
 ---
 
+## Trip Media console (May 2026)
+
+The Trip Media surfaces speak in everyday language. Outcomes first; jargon last. Every reason field is also seen by the advertiser or the rider, so name the consequence.
+
+### Voice
+
+- Page subtitles describe what the page is *for*, not what it *contains*. Good: "A live read on what advertisers are running, what is waiting on a moderator, and what the team has touched today." Less good: "Trip Media KPIs."
+- Buttons describe outcomes. "Approve creative", "Force-stop campaign", "Freeze reward" — not "Submit", "OK".
+- Action confirmations carry consequences: "Suspending pulls this creative from delivery immediately."
+
+### Surface examples
+
+| Surface | Direction |
+|---------|-----------|
+| Creative review | "Approve" / "Reject" / "Request changes" / "Suspend" / "Flag for review". Reject and Request changes show "The advertiser sees this." next to the note field. |
+| Force-stop campaign | "Force-stop now" with the consequence line: "Use only when the campaign needs to stop now. Advertiser is notified." |
+| Adjust delivery | "Save delivery change". Reason is required and audited. |
+| Reward freeze | "Freeze reward" — note: "The hold pauses the reward while the case is open. The rider's wallet is not changed yet." |
+| Reward reverse | "Reverse reward" — note: "Reversing debits the rider's wallet. Use only after the freeze has been investigated." |
+| Fraud triage | "Start investigation", "Resolve", "Dismiss", "Escalate to Super Admin", "Set risk level", "Freeze related reward". |
+| Reports | "Download CSV". Recent runs show "completed", "failed", or "running" in plain words. |
+| Settings | Save buttons follow the section: "Save reward caps", "Save reasons", "Save thresholds", "Save watch rules". |
+| Empty states | "No actions yet — Approvals, rejections, freezes, and reversals show up here as soon as a moderator takes one." |
+
+### Role explainer cards
+
+Source of truth: `apps/admin_app/lib/trip-media/role-content.ts`. Each role card lists "Can do" and "Cannot do" lists in plain English. Avoid abstract verbs like "manage" — name the actual capability ("Reverse rider rewards", "Force-stop campaigns").
+
+---
+
 ## Support & tickets
 
 | Surface | Direction |

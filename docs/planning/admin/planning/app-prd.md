@@ -50,9 +50,12 @@
 - **SuperAdmin**: Full access
 - **Compliance**: Document & profile approvals, flags
 - **Operations**: Trips, drivers online, interventions
-- **Finance**: Wallets, payouts, reconciliations
-- **AdManager**: Campaign CRUD + performance
+- **Finance**: Wallets, payouts, reconciliations, advertiser credits, rider reward freeze/reverse
+- **AdManager**: Creative moderation, campaign oversight, Trip Media analytics + settings
 - **Support**: Tickets + messaging
+- **FraudAnalyst**: Fraud signal triage, reward freezes, escalation to Super Admin
+
+The complete capability matrix (per-role, per-action) lives in `user-roles-and-permissions.md`. The capability list is defined in code at `apps/admin_app/lib/permissions.ts`.
 
 ---
 
@@ -185,6 +188,10 @@
 - `trips`, `trip_events` (audit)
 - `wallets`, `wallet_transactions`
 - `ad_campaigns`, `ad_views`
+- `creative_categories`, `ad_creatives`
+- `ad_fraud_signals`, `ad_reward_holds`
+- `trip_media_settings`, `admin_report_runs`
+- `vw_trip_media_overview`, `vw_fraud_candidates` (views for admin KPIs)
 - `admin_users`, `admin_roles`, `audit_logs`
 - `support_tickets`
 
@@ -222,6 +229,15 @@
 - Full Ad Management
 - Advanced Analytics
 - Mobile-responsive optimizations
+
+### Trip Media console (May 2026)
+
+The Trip Media admin console is now live in the same Next.js app under two parents:
+
+- `/creatives` and `/ads` for creative moderation and campaign oversight (existing URLs preserved).
+- `/trip-media/overview`, `/trip-media/advertisers`, `/trip-media/rider-rewards`, `/trip-media/fraud`, `/trip-media/analytics`, `/trip-media/reports`, `/trip-media/settings`.
+
+It introduces a `fraud_analyst` role and a richer capability matrix (see `user-roles-and-permissions.md`). All money-affecting actions go through `SECURITY DEFINER` RPCs that re-check role and write to `audit_logs`. Reports stream CSV inline through `/api/trip-media/reports/[kind]`, and every download is recorded in `admin_report_runs`. Schema changes (new tables, enum extensions, views, RPCs) are documented in `data-model-and-app-entities.md` §11.
 
 ---
 
