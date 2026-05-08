@@ -1,174 +1,139 @@
-import Link from "next/link";
-import Image from "next/image";
+import Link from 'next/link';
+import Image from 'next/image';
 
 export default function AdminLandingPage() {
   return (
-    <main className="min-h-dvh bg-zinc-950 text-zinc-50">
-      <header className="sticky top-0 z-10 border-b border-white/10 bg-zinc-950/80 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Image
-              src="/brand/trip-logo.png"
-              alt="Trip"
-              width={156}
-              height={40}
-              priority
-              className="h-auto w-auto max-w-[160px]"
-            />
+    <div data-surface='marketing'>
+      <main className='min-h-dvh'>
+        <header className='sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--surface-2)]/70 backdrop-blur-xl'>
+          <div className='mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-3 md:px-8'>
+            <div className='flex items-center gap-2'>
+              <Image
+                src='/brand/trip-logo.png'
+                alt='Trip'
+                width={156}
+                height={40}
+                priority
+                className='h-auto w-auto max-w-[160px]'
+              />
+            </div>
+
+            <div className='flex items-center gap-2'>
+              <Link
+                href='/login'
+                className='focus-ring rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-black text-[var(--foreground)] shadow-sm'
+              >
+                Sign in
+              </Link>
+              <Link
+                href='/register'
+                className='focus-ring rounded-full bg-[var(--brand-red)] px-4 py-2 text-sm font-black text-white shadow-xl shadow-red-500/20'
+              >
+                Create account
+              </Link>
+            </div>
           </div>
+        </header>
 
-          <div className="flex items-center gap-2">
-            <Link
-              href="/login"
-              className="rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-white/90 hover:bg-white/5"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/register"
-              className="rounded-lg bg-[var(--brand-red)] px-3 py-2 text-sm font-semibold text-white hover:brightness-95"
-            >
-              Register
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0">
-          <Image
-            src="https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&w=2400&q=80"
-            alt="Operations team working"
-            fill
-            priority
-            className="object-cover opacity-40"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/40 via-zinc-950/70 to-zinc-950" />
-          <div className="absolute -left-40 -top-40 size-[520px] rounded-full bg-fuchsia-500/20 blur-3xl" />
-          <div className="absolute -right-40 -bottom-52 size-[520px] rounded-full bg-cyan-400/20 blur-3xl" />
-        </div>
-
-        <div className="relative mx-auto w-full max-w-6xl px-4 py-16 sm:py-24">
-          <div className="grid items-start gap-10 lg:grid-cols-2">
-            <div>
-              <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">
-                Compliance • Support • Fleet • Ads • Wallets
+        <section className='relative overflow-hidden'>
+          <div className='mx-auto grid min-h-[calc(100svh-72px)] max-w-7xl items-center gap-10 px-5 py-16 md:grid-cols-[0.95fr_1.05fr] md:px-8 md:py-20'>
+            <div className='relative z-10'>
+              <p className='text-sm font-black uppercase tracking-[0.28em] text-[var(--brand-red)]'>
+                Trip Admin
               </p>
-              <h1 className="mt-5 text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
-                Run your fleet with calm, auditable control.
+              <h1 className='mt-5 text-balance text-5xl font-black leading-[0.96] tracking-[-0.06em] md:text-7xl'>
+                Keep drivers moving—with decisions you can trust later.
               </h1>
-              <p className="mt-4 max-w-xl text-pretty text-base text-white/70 sm:text-lg">
-                Verify drivers, review documents, handle support, and keep money
-                moving—without losing the thread. Built for fast triage and clean
-                accountability.
+              <p className='mt-6 max-w-xl text-lg leading-8'>
+                Review verification, resolve support, and manage payouts with a
+                clean audit trail and clear next actions.
               </p>
 
-              <div className="mt-7 flex flex-wrap items-center gap-3">
+              <div className='mt-8 flex flex-col gap-3 sm:flex-row'>
                 <Link
-                  href="/login"
-                  className="rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-zinc-100"
+                  href='/login'
+                  className='focus-ring inline-flex items-center justify-center rounded-full bg-[var(--brand-red)] px-6 py-3 text-sm font-black text-white shadow-xl shadow-red-500/20'
                 >
-                  Open admin console
+                  Open console
                 </Link>
                 <Link
-                  href="/register"
-                  className="rounded-xl bg-[var(--brand-red)] px-4 py-2.5 text-sm font-semibold text-white hover:brightness-95"
+                  href='/register'
+                  className='focus-ring inline-flex items-center justify-center rounded-full border border-[var(--border)] bg-white px-6 py-3 text-sm font-black text-[var(--foreground)]'
                 >
-                  Create admin account
-                </Link>
-                <Link
-                  href="/login?error=not_admin"
-                  className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold text-white/90 hover:bg-white/5"
-                >
-                  Not an admin?
+                  Create account
                 </Link>
               </div>
 
-              <p className="mt-6 text-xs text-white/50">
-                Illustrative preview — KPIs are wired on the dashboard.
+              <p className='mt-6 text-xs'>
+                Internal tool — access is permissioned.
               </p>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_30px_120px_-60px_rgba(0,0,0,0.8)]">
-              <div className="rounded-xl border border-white/10 bg-zinc-950/40 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold">Today</div>
-                  <div className="text-xs text-white/60">Live overview</div>
+            <div className='surface relative overflow-hidden rounded-[2rem] border border-[var(--border)] p-5 shadow-[var(--shadow)]'>
+              <div className='rounded-[1.5rem] bg-white p-5 text-[#122033]'>
+                <div className='flex items-center justify-between gap-3'>
+                  <div>
+                    <div className='text-xs font-black uppercase tracking-[0.2em] text-[var(--brand-red)]'>
+                      Console preview
+                    </div>
+                    <div className='mt-2 text-2xl font-black'>Today</div>
+                  </div>
+                  <span className='rounded-full bg-[var(--brand-navy)] px-3 py-1 text-xs font-black text-white'>
+                    Live
+                  </span>
                 </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <Kpi label="Trips completed" value="128" />
-                  <Kpi label="Docs pending" value="14" />
-                  <Kpi label="Open tickets" value="6" />
+                <div className='mt-6 grid gap-3 sm:grid-cols-3'>
+                  <Kpi label='Trips completed' value='128' />
+                  <Kpi label='Docs to review' value='14' />
+                  <Kpi label='Open tickets' value='6' />
                 </div>
-                <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3">
-                  <div className="text-xs text-white/60">Audit trail</div>
-                  <div className="mt-2 space-y-2">
-                    <LogLine action="Approved driver documents" meta="compliance" />
-                    <LogLine action="Resolved ticket #1024" meta="support" />
-                    <LogLine action="Paid out weekly earnings" meta="finance" />
+                <div className='mt-4 rounded-2xl border border-slate-200 p-4'>
+                  <div className='text-xs font-black uppercase tracking-[0.2em] text-slate-500'>
+                    Recent actions
+                  </div>
+                  <div className='mt-3 space-y-2'>
+                    <LogLine
+                      action='Approved driver documents'
+                      meta='Verification'
+                    />
+                    <LogLine action='Resolved ticket #1024' meta='Support' />
+                    <LogLine action='Queued weekly payout' meta='Finance' />
                   </div>
                 </div>
               </div>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <Feature
-                  title="Faster verification"
-                  body="Review driver + vehicle docs with clear status and reasons."
-                />
-                <Feature
-                  title="Support that scales"
-                  body="See the full story and respond with confidence."
-                />
-                <Feature
-                  title="Wallet visibility"
-                  body="Track balances and transactions without spreadsheet drift."
-                />
-                <Feature
-                  title="Ads + rewards"
-                  body="Manage campaigns and measure views per trip."
-                />
-              </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      <footer className="border-t border-white/10">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-10 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between">
-          <div>Trip Admin • Internal tool</div>
-          <div>Need access? Ask your ops owner to invite you to the admin console.</div>
-        </div>
-      </footer>
-    </main>
+        </section>
+      </main>
+    </div>
   );
 }
 
 function Kpi({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-      <div className="text-xs text-white/60">{label}</div>
-      <div className="mt-1 text-2xl font-semibold tracking-tight">{value}</div>
+    <div className='rounded-xl border border-white/10 bg-white/5 p-3'>
+      <div className='text-xs text-white/60'>{label}</div>
+      <div className='mt-1 text-2xl font-semibold tracking-tight'>{value}</div>
     </div>
   );
 }
 
 function Feature({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-      <div className="text-sm font-semibold">{title}</div>
-      <div className="mt-1 text-sm text-white/70">{body}</div>
+    <div className='rounded-xl border border-white/10 bg-white/5 p-4'>
+      <div className='text-sm font-semibold'>{title}</div>
+      <div className='mt-1 text-sm text-white/70'>{body}</div>
     </div>
   );
 }
 
 function LogLine({ action, meta }: { action: string; meta: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-zinc-950/30 px-3 py-2">
-      <div className="text-sm text-white/85">{action}</div>
-      <div className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-white/60">
+    <div className='flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-zinc-950/30 px-3 py-2'>
+      <div className='text-sm text-white/85'>{action}</div>
+      <div className='rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-white/60'>
         {meta}
       </div>
     </div>
   );
 }
-

@@ -25,7 +25,7 @@ export const DashboardPageNav = () => {
         <div className="shrink-0">
           <Link
             href={parentHref}
-            className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-lg border border-token bg-transparent px-2.5 py-1.5 text-sm font-medium text-[color:var(--foreground)] hover:border-[var(--brand-red)] hover:text-[color:var(--foreground)]"
+            className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-lg border border-token bg-transparent px-2.5 py-1.5 text-sm font-medium text-[color:var(--foreground)] hover:border-[var(--brand-red)] hover:text-[color:var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
             aria-label={backLabel}
           >
             <span aria-hidden>←</span>
@@ -51,7 +51,7 @@ export const DashboardPageNav = () => {
               ) : (
                 <Link
                   href={c.href}
-                  className="truncate rounded px-0.5 font-medium text-[color:var(--foreground)] underline-offset-4 hover:underline"
+                  className="truncate rounded px-0.5 font-medium text-[color:var(--foreground)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
                 >
                   {c.label}
                 </Link>

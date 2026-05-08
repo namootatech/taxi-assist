@@ -64,7 +64,7 @@ export function CommandPalette({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search pages and actions…"
-            className="h-10 w-full bg-transparent text-sm outline-none placeholder:muted"
+            className="h-10 w-full bg-transparent text-sm text-[color:var(--foreground)] placeholder:muted focus-visible:outline-none"
           />
           <div className="hidden rounded-md border border-token px-2 py-1 text-xs muted sm:block">
             Esc
@@ -78,7 +78,7 @@ export function CommandPalette({
                 key={c.href}
                 href={c.href}
                 onClick={handleClose}
-                className="flex items-start justify-between gap-3 rounded-xl px-3 py-2 hover:bg-black/5"
+                className="flex items-start justify-between gap-3 rounded-xl px-3 py-2 transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
               >
                 <div>
                   <div className="text-sm font-semibold">{c.title}</div>

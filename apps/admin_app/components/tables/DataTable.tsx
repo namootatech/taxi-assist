@@ -45,17 +45,23 @@ export function DataTable<TData>({
           <div className="text-sm font-semibold tracking-tight">Results</div>
           <div className="text-xs muted">{rows.length} rows</div>
         </div>
-        <input
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          placeholder={searchPlaceholder}
-          className="h-10 w-full rounded-lg border border-token bg-transparent px-3 text-sm md:max-w-xs"
-        />
+        <div className="w-full md:max-w-xs">
+          <label className="sr-only" htmlFor="data-table-search">
+            Search
+          </label>
+          <input
+            id="data-table-search"
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            placeholder={searchPlaceholder}
+            className="h-10 w-full rounded-lg border border-token bg-transparent px-3 text-sm text-[color:var(--foreground)] placeholder:muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+          />
+        </div>
       </div>
 
       <div className="overflow-auto">
         <table className="min-w-full text-sm">
-          <thead className="sticky top-0 z-10 bg-[var(--surface-1)]">
+          <thead className="sticky top-0 z-10 bg-[var(--surface-1)]/95 backdrop-blur">
             {headers.map((hg) => (
               <tr key={hg.id} className="border-b border-token">
                 {hg.headers.map((h) => (
@@ -68,7 +74,10 @@ export function DataTable<TData>({
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className="border-b border-token hover:bg-black/3">
+              <tr
+                key={r.id}
+                className="border-b border-token transition hover:bg-black/5"
+              >
                 {r.getVisibleCells().map((c) => (
                   <td key={c.id} className="px-4 py-3">
                     {flexRender(c.column.columnDef.cell, c.getContext())}
@@ -79,7 +88,7 @@ export function DataTable<TData>({
             {rows.length === 0 ? (
               <tr>
                 <td className="px-4 py-12 text-center text-sm muted" colSpan={columns.length}>
-                  No results.
+                  No results. Try a different query.
                 </td>
               </tr>
             ) : null}
@@ -96,7 +105,7 @@ export function DataTable<TData>({
             type="button"
             onClick={() => table.previousPage()}
             disabled={!canPrev}
-            className="h-9 rounded-lg border border-token px-3 text-sm font-semibold disabled:opacity-50"
+            className="h-9 rounded-lg border border-token px-3 text-sm font-semibold text-[color:var(--foreground)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
           >
             Prev
           </button>
@@ -104,7 +113,7 @@ export function DataTable<TData>({
             type="button"
             onClick={() => table.nextPage()}
             disabled={!canNext}
-            className="h-9 rounded-lg border border-token px-3 text-sm font-semibold disabled:opacity-50"
+            className="h-9 rounded-lg border border-token px-3 text-sm font-semibold text-[color:var(--foreground)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
           >
             Next
           </button>
