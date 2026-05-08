@@ -64,9 +64,11 @@ class SupabaseService {
     required String email,
     required String password,
   }) async {
-    final emailDomain =
-        email.contains('@') ? email.trim().toLowerCase().split('@').last : 'invalid';
-    AppSentry.action('supabase.auth.sign_in.started', data: {'emailDomain': emailDomain});
+    final emailDomain = email.contains('@')
+        ? email.trim().toLowerCase().split('@').last
+        : 'invalid';
+    AppSentry.action('supabase.auth.sign_in.started',
+        data: {'emailDomain': emailDomain});
     try {
       final res = await auth.signInWithPassword(
         email: email.trim(),
@@ -89,25 +91,6 @@ class SupabaseService {
     }
   }
 
-  Future<AuthResponse> signInWithClerkToken({required String token}) async {
-    AppSentry.action('supabase.auth.sign_in_with_id_token.started');
-    try {
-      final res = await auth.signInWithIdToken(
-        provider: OAuthProvider.keycloak,
-        idToken: token,
-      );
-      AppSentry.action('supabase.auth.sign_in_with_id_token.completed');
-      return res;
-    } catch (e, st) {
-      await AppSentry.captureException(
-        e,
-        stackTrace: st,
-        hint: 'supabase.auth.sign_in_with_id_token',
-      );
-      rethrow;
-    }
-  }
-
   /// Registers auth user and inserts a minimal `profiles` row (client path).
   ///
   /// [profileData] should use snake_case keys: `full_name`, `cellphone`,
@@ -117,9 +100,11 @@ class SupabaseService {
     required String password,
     Map<String, dynamic>? profileData,
   }) async {
-    final emailDomain =
-        email.contains('@') ? email.trim().toLowerCase().split('@').last : 'invalid';
-    AppSentry.action('supabase.auth.sign_up.started', data: {'emailDomain': emailDomain});
+    final emailDomain = email.contains('@')
+        ? email.trim().toLowerCase().split('@').last
+        : 'invalid';
+    AppSentry.action('supabase.auth.sign_up.started',
+        data: {'emailDomain': emailDomain});
     final response = await auth.signUp(
       email: email.trim(),
       password: password,
@@ -141,7 +126,8 @@ class SupabaseService {
 
     await client.from(_profilesTable).upsert(row, onConflict: 'id');
 
-    AppSentry.action('supabase.auth.sign_up.completed', data: {'hasProfileData': profileData != null});
+    AppSentry.action('supabase.auth.sign_up.completed',
+        data: {'hasProfileData': profileData != null});
     return response;
   }
 
@@ -151,7 +137,8 @@ class SupabaseService {
       await auth.signOut();
       AppSentry.action('supabase.auth.sign_out.completed');
     } catch (e, st) {
-      await AppSentry.captureException(e, stackTrace: st, hint: 'supabase.auth.sign_out');
+      await AppSentry.captureException(e,
+          stackTrace: st, hint: 'supabase.auth.sign_out');
       rethrow;
     }
   }
@@ -165,7 +152,11 @@ class SupabaseService {
     final userId = auth.currentUser?.id;
     if (userId == null) return null;
 
-    final row = await client.from(_profilesTable).select().eq('id', userId).maybeSingle();
+    final row = await client
+        .from(_profilesTable)
+        .select()
+        .eq('id', userId)
+        .maybeSingle();
 
     if (row == null) return null;
     return DriverProfile.fromJson(Map<String, dynamic>.from(row));

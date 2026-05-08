@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:clerk_flutter/clerk_flutter.dart';
 
 import '../../core/constants/app_spacing.dart';
 import '../../features/auth/auth_routing.dart';
@@ -12,7 +11,8 @@ class OnboardingGateScreen extends ConsumerStatefulWidget {
   final AuthDestination destination;
 
   @override
-  ConsumerState<OnboardingGateScreen> createState() => _OnboardingGateScreenState();
+  ConsumerState<OnboardingGateScreen> createState() =>
+      _OnboardingGateScreenState();
 }
 
 class _OnboardingGateScreenState extends ConsumerState<OnboardingGateScreen> {
@@ -22,7 +22,8 @@ class _OnboardingGateScreenState extends ConsumerState<OnboardingGateScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAutoLinkVehicle());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _maybeAutoLinkVehicle());
   }
 
   Future<void> _maybeAutoLinkVehicle() async {
@@ -39,7 +40,8 @@ class _OnboardingGateScreenState extends ConsumerState<OnboardingGateScreen> {
       final vehicleId = (vehicle?['vehicle_id'] ?? vehicle?['id']) as String?;
       if (vehicleId == null || vehicleId.isEmpty) {
         setState(() {
-          _autoLinkMessage = 'No vehicle found yet. If you just submitted, try again in a moment.';
+          _autoLinkMessage =
+              'No vehicle found yet. If you just submitted, try again in a moment.';
           _isAutoLinking = false;
         });
         return;
@@ -53,7 +55,8 @@ class _OnboardingGateScreenState extends ConsumerState<OnboardingGateScreen> {
       });
     } catch (e) {
       setState(() {
-        _autoLinkMessage = 'Couldn’t link your vehicle automatically. Pull to refresh or contact support.';
+        _autoLinkMessage =
+            'Couldn’t link your vehicle automatically. Pull to refresh or contact support.';
         _isAutoLinking = false;
       });
     }
@@ -68,7 +71,7 @@ class _OnboardingGateScreenState extends ConsumerState<OnboardingGateScreen> {
   String get _body => switch (widget.destination) {
         AuthDestination.completeRegistration =>
           'We couldn\'t load your driver profile yet. Pull to refresh, or sign out and '
-          'sign in again. If this keeps happening, contact support.',
+              'sign in again. If this keeps happening, contact support.',
         AuthDestination.onboardingLinkVehicle =>
           'Your profile is approved. We’re finishing setup using the vehicle you already registered.',
         _ => '',
@@ -84,7 +87,8 @@ class _OnboardingGateScreenState extends ConsumerState<OnboardingGateScreen> {
           padding: AppSpacing.screenPadding,
           children: [
             Text(_body, style: Theme.of(context).textTheme.bodyLarge),
-            if (widget.destination == AuthDestination.onboardingLinkVehicle) ...[
+            if (widget.destination ==
+                AuthDestination.onboardingLinkVehicle) ...[
               const SizedBox(height: 12),
               Text(
                 _autoLinkMessage ?? 'Pull to refresh to continue.',
@@ -96,7 +100,8 @@ class _OnboardingGateScreenState extends ConsumerState<OnboardingGateScreen> {
               onPressed: _isAutoLinking
                   ? null
                   : () async {
-                      if (widget.destination == AuthDestination.onboardingLinkVehicle) {
+                      if (widget.destination ==
+                          AuthDestination.onboardingLinkVehicle) {
                         await _maybeAutoLinkVehicle();
                       }
                       await ref.read(currentDriverProvider.notifier).refresh();
@@ -107,7 +112,6 @@ class _OnboardingGateScreenState extends ConsumerState<OnboardingGateScreen> {
             OutlinedButton(
               onPressed: () async {
                 await ref.read(supabaseServiceProvider).signOut();
-                await ClerkAuth.of(context).signOut();
                 ref.invalidate(currentDriverProvider);
               },
               child: const Text('Sign out'),

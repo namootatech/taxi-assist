@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../core/observability/app_sentry.dart';
+import '../../core/constants/app_spacing.dart';
 import '../../core/utils/safe_text.dart';
 import '../../core/utils/toast.dart';
 import '../../shared/providers/app_providers.dart';
+import 'forgot_password_screen.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -16,31 +18,31 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _email = TextEditingController();
+  final _password = TextEditingController();
   var _loading = false;
 
-  Future<void> _exchangeSession(String jwt) async {
-    if (_loading) return;
+  @override
+  void dispose() {
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
       AppSentry.action('driver.login.started');
 
-      await ref.read(supabaseServiceProvider).signInWithClerkToken(token: jwt);
-
+      await ref.read(supabaseServiceProvider).signIn(
+            email: _email.text,
+            password: _password.text,
+          );
       AppSentry.action('driver.login.auth_ok');
-      try {
-        await ref.read(currentDriverProvider.notifier).refresh();
-      } catch (e, st) {
-        // If auth succeeded, treat profile refresh failures as non-blocking.
-        await AppSentry.captureException(
-          e,
-          stackTrace: st,
-          hint: 'driver.login.profile_refresh_failed',
-        );
-      }
-      AppSentry.action('driver.login.completed');
-      if (!mounted) return;
-      Navigator.of(context).pop();
-    } catch (e, st) {
+      await ref.read(currentDriverProvider.notifier).refresh();
+    } catch (e) {
       AppSentry.action(
         'driver.login.failed',
         data: {'errorType': e.runtimeType.toString()},
@@ -49,6 +51,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await AppSentry.captureException(e, stackTrace: st, hint: 'driver.login');
       showAppToast(userFacingError(e), long: true);
     } finally {
+      AppSentry.action('driver.login.completed');
       if (mounted) setState(() => _loading = false);
     }
   }
@@ -58,30 +61,80 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Sign in')),
       body: SafeArea(
-        child: ClerkErrorListener(
-          child: ClerkAuthBuilder(
-            signedOutBuilder: (context, authState) {
-              return const ClerkAuthentication();
-            },
-            signedInBuilder: (context, authState) {
-              final auth = ClerkAuth.of(context);
-              return FutureBuilder(
-                future: auth.sessionToken(),
-                builder: (context, snapshot) {
-                  final token = snapshot.data?.jwt;
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (token == null || token.isEmpty) {
-                    return const Center(child: Text('Could not load session token.'));
-                  }
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _exchangeSession(token);
-                  });
-                  return const Center(child: CircularProgressIndicator());
-                },
-              );
-            },
+        child: SingleChildScrollView(
+          padding: AppSpacing.screenPadding,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextFormField(
+                  controller: _email,
+                  decoration: const InputDecoration(labelText: 'Email'),
+                  keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty)
+                      return 'Enter your email';
+                    if (!v.contains('@')) return 'Enter a valid email';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _password,
+                  decoration: const InputDecoration(labelText: 'Password'),
+                  obscureText: true,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Enter your password';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: _loading ? null : _submit,
+                  child: _loading
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Sign in'),
+                ),
+                TextButton(
+                  onPressed: _loading
+                      ? null
+                      : () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const ForgotPasswordScreen(),
+                            ),
+                          );
+                        },
+                  child: const Text('Forgot password?'),
+                ),
+                TextButton(
+                  onPressed: _loading
+                      ? null
+                      : () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const RegisterScreen(),
+                            ),
+                          );
+                        },
+                  child: const Text('Create an account'),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Biometric sign-in may be available in a future update.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),

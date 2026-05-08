@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:clerk_flutter/clerk_flutter.dart';
 
 import '../../core/constants/app_spacing.dart';
 import '../../core/utils/toast.dart';
@@ -93,7 +92,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     _licenseCode = TextEditingController(text: p.licenseCode ?? '');
     _pdpNumber = TextEditingController(text: p.pdpNumber ?? '');
     _pdpExpiry = TextEditingController(
-      text: p.pdpExpiry != null ? p.pdpExpiry!.toIso8601String().split('T').first : '',
+      text: p.pdpExpiry != null
+          ? p.pdpExpiry!.toIso8601String().split('T').first
+          : '',
     );
     _dob = TextEditingController(
       text: p.dob != null ? p.dob!.toIso8601String().split('T').first : '',
@@ -128,11 +129,13 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     setState(() => _saving = true);
     try {
       final bank = BankDetails(
-        accountHolder: _bankHolder.text.trim().isEmpty ? null : _bankHolder.text.trim(),
+        accountHolder:
+            _bankHolder.text.trim().isEmpty ? null : _bankHolder.text.trim(),
         bankName: _bankName.text.trim().isEmpty ? null : _bankName.text.trim(),
         accountNumber:
             _bankAccount.text.trim().isEmpty ? null : _bankAccount.text.trim(),
-        branchCode: _bankBranch.text.trim().isEmpty ? null : _bankBranch.text.trim(),
+        branchCode:
+            _bankBranch.text.trim().isEmpty ? null : _bankBranch.text.trim(),
       );
       final patch = <String, dynamic>{
         'full_name': _fullName.text.trim(),
@@ -143,7 +146,8 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         'license_number': _licenseNumber.text.trim(),
         'license_code': _licenseCode.text.trim(),
         'pdp_number': _pdpNumber.text.trim(),
-        if (_pdpExpiry.text.trim().isNotEmpty) 'pdp_expiry': _pdpExpiry.text.trim(),
+        if (_pdpExpiry.text.trim().isNotEmpty)
+          'pdp_expiry': _pdpExpiry.text.trim(),
         if (_dob.text.trim().isNotEmpty) 'dob': _dob.text.trim(),
         'bank_details': bank.toJson(),
       };
@@ -188,23 +192,63 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         const Divider(),
         Text('Personal', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
-        _field(context, label: 'Full name', controller: _fullName, readOnly: !widget.canEdit),
-        _field(context, label: 'Cellphone', controller: _cellphone, readOnly: !widget.canEdit),
-        _field(context, label: 'Email', controller: _email, readOnly: !widget.canEdit),
-        _field(context, label: 'Residential address', controller: _residential, readOnly: !widget.canEdit),
-        _field(context, label: 'ID number', controller: _idNumber, readOnly: !widget.canEdit),
-        _field(context, label: 'Date of birth (YYYY-MM-DD)', controller: _dob, readOnly: !widget.canEdit),
-        _field(context, label: 'Licence number', controller: _licenseNumber, readOnly: !widget.canEdit),
-        _field(context, label: 'Licence code', controller: _licenseCode, readOnly: !widget.canEdit),
-        _field(context, label: 'PDP number', controller: _pdpNumber, readOnly: !widget.canEdit),
-        _field(context, label: 'PDP expiry (YYYY-MM-DD)', controller: _pdpExpiry, readOnly: !widget.canEdit),
+        _field(context,
+            label: 'Full name',
+            controller: _fullName,
+            readOnly: !widget.canEdit),
+        _field(context,
+            label: 'Cellphone',
+            controller: _cellphone,
+            readOnly: !widget.canEdit),
+        _field(context,
+            label: 'Email', controller: _email, readOnly: !widget.canEdit),
+        _field(context,
+            label: 'Residential address',
+            controller: _residential,
+            readOnly: !widget.canEdit),
+        _field(context,
+            label: 'ID number',
+            controller: _idNumber,
+            readOnly: !widget.canEdit),
+        _field(context,
+            label: 'Date of birth (YYYY-MM-DD)',
+            controller: _dob,
+            readOnly: !widget.canEdit),
+        _field(context,
+            label: 'Licence number',
+            controller: _licenseNumber,
+            readOnly: !widget.canEdit),
+        _field(context,
+            label: 'Licence code',
+            controller: _licenseCode,
+            readOnly: !widget.canEdit),
+        _field(context,
+            label: 'PDP number',
+            controller: _pdpNumber,
+            readOnly: !widget.canEdit),
+        _field(context,
+            label: 'PDP expiry (YYYY-MM-DD)',
+            controller: _pdpExpiry,
+            readOnly: !widget.canEdit),
         const SizedBox(height: 16),
         Text('Bank details', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
-        _field(context, label: 'Account holder', controller: _bankHolder, readOnly: !widget.canEdit),
-        _field(context, label: 'Bank name', controller: _bankName, readOnly: !widget.canEdit),
-        _field(context, label: 'Account number', controller: _bankAccount, readOnly: !widget.canEdit),
-        _field(context, label: 'Branch code', controller: _bankBranch, readOnly: !widget.canEdit),
+        _field(context,
+            label: 'Account holder',
+            controller: _bankHolder,
+            readOnly: !widget.canEdit),
+        _field(context,
+            label: 'Bank name',
+            controller: _bankName,
+            readOnly: !widget.canEdit),
+        _field(context,
+            label: 'Account number',
+            controller: _bankAccount,
+            readOnly: !widget.canEdit),
+        _field(context,
+            label: 'Branch code',
+            controller: _bankBranch,
+            readOnly: !widget.canEdit),
         const SizedBox(height: 16),
         Text('Linked vehicle', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
@@ -214,7 +258,8 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               return const Card(
                 child: ListTile(
                   title: Text('No vehicle linked'),
-                  subtitle: Text('Complete onboarding and link a vehicle to go online.'),
+                  subtitle: Text(
+                      'Complete onboarding and link a vehicle to go online.'),
                 ),
               );
             }
@@ -265,7 +310,6 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         FilledButton.tonal(
           onPressed: () async {
             await ref.read(supabaseServiceProvider).signOut();
-            await ClerkAuth.of(context).signOut();
             ref.invalidate(currentDriverProvider);
           },
           child: const Text('Sign out'),

@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_spacing.dart';
@@ -270,7 +269,8 @@ class _WaitingApprovalScreenState extends ConsumerState<WaitingApprovalScreen> {
                                 ? const SizedBox(
                                     width: 16,
                                     height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
                                   )
                                 : const Icon(Icons.upload_file),
                             label: const Text('Upload again'),
@@ -299,7 +299,6 @@ class _WaitingApprovalScreenState extends ConsumerState<WaitingApprovalScreen> {
             OutlinedButton(
               onPressed: () async {
                 await ref.read(supabaseServiceProvider).signOut();
-                await ClerkAuth.of(context).signOut();
                 ref.invalidate(currentDriverProvider);
               },
               child: const Text('Sign out'),
