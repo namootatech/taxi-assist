@@ -1,4 +1,4 @@
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export type ReportKind =
   | 'creative_actions'
@@ -75,7 +75,7 @@ const ninetyDaysAgo = () =>
 export async function buildReport(
   kind: ReportKind,
 ): Promise<{ csv: string; rowCount: number }> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   if (kind === 'creative_actions') {
     const { data } = await supabase
       .from('audit_logs')
@@ -248,7 +248,7 @@ export interface ReportRunRow {
 export async function loadRecentReportRuns(
   limit = 25,
 ): Promise<Array<ReportRunRow>> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from('admin_report_runs')
     .select(

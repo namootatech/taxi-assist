@@ -1,4 +1,4 @@
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export type FraudLevel = 'low' | 'medium' | 'high' | 'critical';
 export type FraudStatus =
@@ -41,7 +41,7 @@ export async function loadFraudSignals(filters: {
   campaignId?: string;
   limit?: number;
 }): Promise<Array<FraudSignalRow>> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   let query = supabase
     .from('ad_fraud_signals')
     .select(
@@ -79,7 +79,7 @@ export async function loadFraudSignals(filters: {
 }
 
 export async function loadFraudCounts(): Promise<FraudCounts> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const [
     { count: total },
     { count: open },
@@ -122,7 +122,7 @@ export interface FraudCandidateRow {
 export async function loadFraudCandidates(
   limit = 25,
 ): Promise<Array<FraudCandidateRow>> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from('vw_fraud_candidates')
     .select(

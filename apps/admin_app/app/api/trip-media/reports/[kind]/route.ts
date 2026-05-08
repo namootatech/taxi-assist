@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { hasCapability } from '@/lib/permissions';
 import {
   logActionError,
@@ -27,7 +27,7 @@ export async function GET(
     );
   }
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

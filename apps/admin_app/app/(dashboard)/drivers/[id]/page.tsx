@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { userFacingError } from '@/lib/user-facing-error';
 
 type ProfileRow = {
@@ -157,7 +157,7 @@ export default async function DriverDetailPage({
   const { tab, docId } = await searchParams;
   const activeTab = (tab ?? 'overview').toLowerCase();
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const { data: profile, error } = await supabase
     .from('profiles')

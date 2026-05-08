@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { getPartnerContext } from '@/lib/partner';
 import { canCloseOrg, canEditOrg } from '@/lib/permissions';
 import { logActionError, logActionInfo } from '@/lib/server-action-logger';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export interface SettingsActionResult {
   success: boolean;
@@ -52,7 +52,7 @@ export async function updateOrgProfile(
       message: parsed.error.issues[0]?.message ?? 'Check the fields.',
     };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from('media_partners')
     .update({
@@ -90,7 +90,7 @@ export async function updateAccountName(
       message: parsed.error.issues[0]?.message ?? 'Check the name.',
     };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.updateUser({
     data: { full_name: parsed.data.full_name || null },
   });
@@ -119,7 +119,7 @@ export async function changePassword(
     };
   }
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.updateUser({
     password: parsed.data.password,
   });
@@ -150,7 +150,7 @@ export async function closeWorkspace(): Promise<SettingsActionResult> {
     };
   }
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from('media_partners')
     .update({ status: 'closed', updated_at: new Date().toISOString() })

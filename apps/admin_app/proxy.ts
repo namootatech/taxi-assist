@@ -1,6 +1,5 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
 import { hasCapability, type Capability } from "@/lib/permissions"
 
 const protectedRoutes: Array<{ prefix: string; capability?: Capability }> = [
@@ -34,9 +33,7 @@ function matchProtectedRoute(pathname: string) {
   return protectedRoutes.find((route) => pathname === route.prefix || pathname.startsWith(`${route.prefix}/`))
 }
 
-const isClerkPublicRoute = createRouteMatcher(["/login(.*)", "/register(.*)"])
-
-const handleProxy = clerkMiddleware(async (_auth, request: NextRequest) => {
+const handleProxy = async (request: NextRequest) => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -62,7 +59,7 @@ const handleProxy = clerkMiddleware(async (_auth, request: NextRequest) => {
   } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
-  const isAuthRoute = isClerkPublicRoute(request)
+  const isAuthRoute = request.nextUrl.clone().pathname.startsWith("/login") || request.nextUrl.clone().pathname.startsWith("/register");
   const protectedRoute = matchProtectedRoute(pathname)
 
   if (!user && protectedRoute) {

@@ -1,4 +1,4 @@
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export type CreativeStatus =
   | 'draft'
@@ -54,7 +54,7 @@ export async function loadCreativeQueue(
   status: CreativeStatus,
   limit = 200,
 ): Promise<Array<CreativeRow>> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from('ad_creatives')
     .select(
@@ -140,7 +140,7 @@ export interface CreativeStatusCounts {
 }
 
 export async function loadCreativeCounts(): Promise<CreativeStatusCounts> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const statuses: Array<keyof CreativeStatusCounts> = [
     'pending_review',
     'approved',

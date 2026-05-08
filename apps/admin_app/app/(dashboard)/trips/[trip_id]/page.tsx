@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { userFacingError } from '@/lib/user-facing-error';
 import { TripsLiveMapSection } from '@/components/maps/TripsLiveMapSection';
 import { RealtimeRefresh } from '@/components/realtime/RealtimeRefresh';
@@ -44,7 +44,7 @@ export default async function TripDetailPage({
   params: Promise<{ trip_id: string }>;
 }) {
   const { trip_id } = await params;
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const { data: trip, error } = await supabase
     .from('trips')

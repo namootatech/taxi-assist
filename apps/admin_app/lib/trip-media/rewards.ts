@@ -1,4 +1,4 @@
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export interface RecentRewardRow {
   adViewId: string;
@@ -40,7 +40,7 @@ interface RawAdView {
 export async function loadRecentRewards(
   limit = 100,
 ): Promise<Array<RecentRewardRow>> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from('ad_views')
     .select(
@@ -86,7 +86,7 @@ export interface RewardHoldRow {
 export async function loadRewardHolds(
   limit = 100,
 ): Promise<Array<RewardHoldRow>> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from('ad_reward_holds')
     .select(
@@ -123,7 +123,7 @@ export interface WalletTrailRow {
 export async function loadAdRewardWalletTrails(
   limit = 100,
 ): Promise<Array<WalletTrailRow>> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from('wallet_transactions')
     .select('tx_id, wallet_id, direction, amount, type, reference, created_at')

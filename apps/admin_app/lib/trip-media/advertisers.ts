@@ -1,4 +1,4 @@
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export interface PartnerListRow {
   id: string;
@@ -18,7 +18,7 @@ export async function loadPartnerList(filters: {
   status?: string;
   query?: string;
 }): Promise<Array<PartnerListRow>> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   let query = supabase
     .from('media_partners')
     .select(
@@ -89,7 +89,7 @@ export interface PartnerOverview {
 export async function loadPartnerOverview(
   partnerId: string,
 ): Promise<PartnerOverview | null> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from('media_partners')
     .select(
@@ -126,7 +126,7 @@ export interface PartnerMember {
 export async function loadPartnerMembers(
   partnerId: string,
 ): Promise<Array<PartnerMember>> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from('partner_members')
     .select('id, email, role, invited_at, joined_at, user_id')
@@ -157,7 +157,7 @@ export interface PartnerSubscription {
 export async function loadPartnerSubscriptions(
   partnerId: string,
 ): Promise<Array<PartnerSubscription>> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from('partner_subscriptions')
     .select(
@@ -195,7 +195,7 @@ export interface PartnerBillingEvent {
 export async function loadPartnerBillingEvents(
   partnerId: string,
 ): Promise<Array<PartnerBillingEvent>> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from('partner_billing_events')
     .select('id, type, provider, processed_at')
@@ -221,7 +221,7 @@ export interface PartnerCreativeRow {
 export async function loadPartnerCreatives(
   partnerId: string,
 ): Promise<Array<PartnerCreativeRow>> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from('ad_creatives')
     .select('id, title, status, category, created_at')
@@ -248,7 +248,7 @@ export interface PartnerAuditEntry {
 export async function loadPartnerAuditTail(
   partnerId: string,
 ): Promise<Array<PartnerAuditEntry>> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from('audit_logs')
     .select('audit_id, action, reason, actor_role, created_at, metadata')

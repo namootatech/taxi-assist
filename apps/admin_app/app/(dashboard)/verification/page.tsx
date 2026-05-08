@@ -1,4 +1,4 @@
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import {
   logActionError,
   logActionInfo,
@@ -87,7 +87,7 @@ export default async function VerificationPage({
 }: {
   searchParams: Promise<{ status?: string; driverId?: string }>;
 }) {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { status, driverId } = await searchParams;
   const effectiveStatus = status ?? 'PENDING';
 
@@ -157,7 +157,7 @@ export default async function VerificationPage({
       return { ok: false as const, error: 'Reason is required' };
     }
 
-    const supabase = await createClerkSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const {
       data: { user },
       error: userErr,
@@ -222,7 +222,7 @@ export default async function VerificationPage({
       return { ok: false as const, error: 'Reason is required' };
     }
 
-    const supabase = await createClerkSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const {
       data: { user },
       error: userErr,

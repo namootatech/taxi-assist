@@ -1,4 +1,4 @@
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { userFacingError } from '@/lib/user-facing-error';
 
 type AuditRow = {
@@ -21,7 +21,7 @@ export default async function AuditPage({
     actor_role?: string;
   }>;
 }) {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { action, entity_type, actor_role } = await searchParams;
 
   let q = supabase

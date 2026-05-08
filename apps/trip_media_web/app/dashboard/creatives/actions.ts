@@ -9,7 +9,7 @@ import {
   logActionInfo,
   logActionWarn,
 } from '@/lib/server-action-logger';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export interface CreativeActionResult {
   success: boolean;
@@ -59,7 +59,7 @@ export async function createCreative(
     };
   }
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { error } = await supabase.from('ad_creatives').insert({
     id: parsed.data.id,
     partner_id: context.partner.id,
@@ -107,7 +107,7 @@ export async function submitCreativeForReview(
   if (!parsed.success)
     return { success: false, message: 'Invalid creative reference.' };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from('ad_creatives')
     .update({ status: 'pending_review', updated_at: new Date().toISOString() })
@@ -152,7 +152,7 @@ export async function deleteCreative(
   if (!parsed.success)
     return { success: false, message: 'Invalid creative reference.' };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const { count: linked } = await supabase
     .from('ad_campaigns')
@@ -214,7 +214,7 @@ export async function getCreativeSignedUrl(
   if (!context)
     return { success: false, message: 'Sign in to preview creatives.' };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: creative } = await supabase
     .from('ad_creatives')
     .select('storage_path')

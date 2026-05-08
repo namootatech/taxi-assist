@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { getPartnerContext } from '@/lib/partner';
 import { buildPayfastSignature } from '@/lib/payfast/signature';
 import { logActionInfo, logActionWarn } from '@/lib/server-action-logger';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 const checkoutSchema = z.object({
   packageId: z.string().uuid(),
@@ -46,7 +46,7 @@ export async function createPayfastCheckout(formData: FormData) {
     redirect('/dashboard/billing?error=payfast_not_ready');
   }
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: selectedPackage } = await supabase
     .from('ad_packages')
     .select('id, name, monthly_price_cents')

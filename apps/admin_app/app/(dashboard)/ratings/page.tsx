@@ -1,4 +1,4 @@
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { userFacingError } from '@/lib/user-facing-error';
 
 type RatingRow = {
@@ -12,7 +12,7 @@ type RatingRow = {
 };
 
 export default async function RatingsPage() {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase
     .from('driver_ratings')

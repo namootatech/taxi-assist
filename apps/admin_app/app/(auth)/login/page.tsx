@@ -1,69 +1,120 @@
-import { redirect } from 'next/navigation';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
-import Image from 'next/image';
-import { ClerkLoginClient } from './ClerkLoginClient';
+import { redirect, unstable_rethrow } from "next/navigation";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { logActionError, logActionInfo } from "@/lib/server-action-logger";
+import { userFacingError } from "@/lib/user-facing-error";
+import Image from "next/image";
 
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (user) {
-    redirect('/dashboard');
+    redirect("/dashboard");
   }
 
   const { next, error } = await searchParams;
 
+  async function signIn(formData: FormData) {
+    "use server";
+    const email = String(formData.get("email") ?? "").trim().toLowerCase();
+    const password = String(formData.get("password") ?? "");
+    const emailDomain = email.includes("@") ? email.split("@").at(-1) : "invalid";
+    const safeNext =
+      next && next.startsWith("/") && !next.startsWith("//") ? next : "";
+    logActionInfo("admin.login", "started", { emailDomain, safeNext });
+
+    try {
+      const supabase = await createSupabaseServerClient();
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        logActionError("admin.login", "auth_signin_failed", error, { emailDomain });
+        redirect(
+          `/login?error=${encodeURIComponent(userFacingError(error))}${safeNext ? `&next=${encodeURIComponent(safeNext)}` : ""}`,
+        );
+      }
+      logActionInfo("admin.login", "completed", { emailDomain, safeNext });
+      redirect(safeNext || "/");
+    } catch (err) {
+      unstable_rethrow(err);
+      logActionError("admin.login", "unexpected_failed", err, { emailDomain });
+      redirect(
+        `/login?error=${encodeURIComponent(userFacingError(err))}${safeNext ? `&next=${encodeURIComponent(safeNext)}` : ""}`,
+      );
+    }
+  }
+
   return (
-    <div
-      data-surface='marketing'
-      className='flex flex-1 items-center justify-center px-4 py-12'
-    >
-      <div className='w-full max-w-sm rounded-[2rem] border border-token surface-2 p-6 shadow-[var(--shadow)]'>
-        <div className='flex items-center gap-3'>
+    <div className="flex flex-1 items-center justify-center surface-2 px-4 py-12">
+      <div className="w-full max-w-sm rounded-2xl border border-token surface-1 p-6 shadow-[var(--shadow)]">
+        <div className="flex items-center gap-3">
           <Image
-            src='/brand/trip-icon.png'
-            alt='Trip'
+            src="/brand/trip-icon.png"
+            alt="Trip"
             width={36}
             height={36}
-            className='rounded-lg'
+            className="rounded-lg"
           />
           <div>
-            <div className='text-xs font-medium muted'>Trip</div>
-            <h1 className='text-lg font-semibold tracking-tight'>
-              Admin Console
-            </h1>
+            <div className="text-xs font-medium muted">Trip</div>
+            <h1 className="text-lg font-semibold tracking-tight">Admin Console</h1>
           </div>
         </div>
 
-        <p className='mt-3 text-sm muted'>
-          Sign in to manage verification, support, and payouts.
-        </p>
-        <p className='mt-2 text-xs muted'>
-          New here?{' '}
-          <a className='underline underline-offset-4' href='/landing'>
+        <p className="mt-3 text-sm muted">Sign in with your admin account.</p>
+        <p className="mt-2 text-xs text-zinc-500">
+          New here?{" "}
+          <a className="underline underline-offset-4" href="/landing">
             View the console overview
           </a>
           .
         </p>
         {error ? (
-          <div className='mt-4 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700'>
-            {error === 'not_admin'
-              ? 'This account is not authorized for the admin console.'
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error === "not_admin"
+              ? "This account is not authorized for the admin console."
               : decodeURIComponent(error)}
           </div>
         ) : null}
 
         {/* simple, dependency-free form */}
-        <div className='mt-6'>
-          <ClerkLoginClient />
-        </div>
+        <form action={signIn} className="mt-6 space-y-4">
+          <label className="block space-y-1">
+            <span className="text-sm font-medium">Email</span>
+            <input
+              name="email"
+              type="email"
+              required
+              className="h-10 w-full rounded-md border border-token bg-transparent px-3 text-sm"
+              autoComplete="email"
+            />
+          </label>
+
+          <label className="block space-y-1">
+            <span className="text-sm font-medium">Password</span>
+            <input
+              name="password"
+              type="password"
+              required
+              className="h-10 w-full rounded-md border border-token bg-transparent px-3 text-sm"
+              autoComplete="current-password"
+            />
+          </label>
+
+          <button
+            type="submit"
+            className="h-10 w-full rounded-md bg-[var(--brand-red)] text-sm font-semibold text-white hover:brightness-95"
+          >
+            Sign in
+          </button>
+        </form>
       </div>
     </div>
   );
 }
+

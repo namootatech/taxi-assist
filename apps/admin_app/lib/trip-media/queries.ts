@@ -1,4 +1,4 @@
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export interface TripMediaOverview {
   pendingCreativesCount: number;
@@ -49,7 +49,7 @@ const toNumber = (value: number | string | null | undefined): number => {
 };
 
 export async function loadTripMediaOverview(): Promise<TripMediaOverview> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from('vw_trip_media_overview')
     .select('*')
@@ -85,7 +85,7 @@ export interface TopCampaignRow {
 export async function loadTopCampaigns(
   limit = 10,
 ): Promise<Array<TopCampaignRow>> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from('ad_campaigns')
     .select(
@@ -122,7 +122,7 @@ export interface RecentAdminAction {
 export async function loadRecentTripMediaActions(
   limit = 8,
 ): Promise<Array<RecentAdminAction>> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from('audit_logs')
     .select('audit_id, action, actor_role, entity_type, reason, created_at')

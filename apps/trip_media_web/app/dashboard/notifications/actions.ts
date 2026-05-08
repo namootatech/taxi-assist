@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { getPartnerContext } from '@/lib/partner';
 import { logActionError } from '@/lib/server-action-logger';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export interface NotificationActionResult {
   success: boolean;
@@ -21,7 +21,7 @@ export async function markAllRead(): Promise<NotificationActionResult> {
       message: 'Open the dashboard from a partner workspace first.',
     };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from('partner_notifications')
     .update({ read_at: new Date().toISOString() })
@@ -59,7 +59,7 @@ export async function markRead(
       message: 'Open the dashboard from a partner workspace first.',
     };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from('partner_notifications')
     .update({ read_at: new Date().toISOString() })

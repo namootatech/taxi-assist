@@ -1,4 +1,4 @@
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { userFacingError } from '@/lib/user-facing-error';
 import { WalletsClient } from './WalletsClient';
 
@@ -11,7 +11,7 @@ type WalletRow = {
 };
 
 export default async function WalletsPage() {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase
     .from('wallets')

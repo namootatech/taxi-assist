@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { CreditCard, History, PiggyBank, Sparkles } from 'lucide-react';
 import { getPartnerContext } from '@/lib/partner';
 import { canManageBilling } from '@/lib/permissions';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createPayfastCheckout } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -42,7 +42,7 @@ export default async function BillingPage({
     redirect('/signup?setup=partner&next=/dashboard/billing');
   }
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const [{ data: packages }, { data: subscription }, { data: events }] =
     await Promise.all([
       supabase

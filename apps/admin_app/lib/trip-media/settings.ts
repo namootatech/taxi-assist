@@ -1,4 +1,4 @@
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import {
   defaultRejectionReasons,
   defaultRewardCaps,
@@ -126,7 +126,7 @@ const parseWatchRules = (value: unknown): WatchRules => {
 };
 
 export async function loadTripMediaSettings(): Promise<TripMediaSettings> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from('trip_media_settings')
     .select('key, value')

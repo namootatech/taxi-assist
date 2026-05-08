@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { BarChart3 } from 'lucide-react';
 import { getPartnerContext } from '@/lib/partner';
 import { canManageCampaigns } from '@/lib/permissions';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { CampaignActions } from './CampaignActions';
 import { CampaignForm } from './CampaignForm';
 
@@ -42,7 +42,7 @@ export default async function CampaignsPage({
     redirect('/signup?setup=partner&next=/dashboard/campaigns');
   }
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const [{ data: creatives }, { data: campaigns }] = await Promise.all([
     supabase
       .from('ad_creatives')

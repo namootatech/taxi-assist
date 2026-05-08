@@ -18,7 +18,7 @@ import {
   canManageCampaigns,
   canManageCreatives,
 } from '@/lib/permissions';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,7 +55,7 @@ export default async function DashboardPage({
     redirect('/signup?setup=partner&next=/dashboard');
   }
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const [campaignsResult, creativesResult, subscriptionResult] =
     await Promise.all([

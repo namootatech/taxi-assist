@@ -1,4 +1,4 @@
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export interface DailyTrendRow {
   day: string;
@@ -71,7 +71,7 @@ const toDayKey = (iso: string) => {
 export async function loadAnalyticsBundle(
   daysWindow = 14,
 ): Promise<AnalyticsBundle> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const since = new Date(
     Date.now() - daysWindow * 24 * 60 * 60 * 1000,
   ).toISOString();

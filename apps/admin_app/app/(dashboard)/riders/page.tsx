@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { userFacingError } from '@/lib/user-facing-error';
 
 type RiderRow = {
@@ -12,7 +12,7 @@ type RiderRow = {
 };
 
 export default async function RidersPage() {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase
     .from('profiles')

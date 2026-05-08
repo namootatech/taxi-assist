@@ -14,7 +14,7 @@ import {
   logActionInfo,
   logActionWarn,
 } from '@/lib/server-action-logger';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export interface TeamActionResult {
   success: boolean;
@@ -77,7 +77,7 @@ export async function inviteMember(input: {
     };
   }
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -181,7 +181,7 @@ export async function revokeInvite(input: {
   if (!parsed.success)
     return { success: false, message: 'Invalid invite reference.' };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: invite } = await supabase
     .from('partner_invites')
     .select('id, email')
@@ -241,7 +241,7 @@ export async function regenerateInviteLink(input: {
   if (!parsed.success)
     return { success: false, message: 'Invalid invite reference.' };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const token = newInviteToken();
 
   const { data: invite, error } = await supabase
@@ -294,7 +294,7 @@ export async function removeMember(input: {
   if (!parsed.success)
     return { success: false, message: 'Invalid member reference.' };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: target } = await supabase
     .from('partner_members')
     .select('id, role')
@@ -354,7 +354,7 @@ export async function changeMemberRole(input: {
   if (!parsed.success)
     return { success: false, message: 'Invalid role selection.' };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: target } = await supabase
     .from('partner_members')
     .select('id, role')

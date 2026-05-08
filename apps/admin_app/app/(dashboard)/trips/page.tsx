@@ -1,4 +1,4 @@
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { userFacingError } from '@/lib/user-facing-error';
 import { RealtimeRefresh } from '@/components/realtime/RealtimeRefresh';
 import { TripsLiveMapSection } from '@/components/maps/TripsLiveMapSection';
@@ -36,7 +36,7 @@ export default async function TripsPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { status } = await searchParams;
 
   let q = supabase

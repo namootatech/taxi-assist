@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { FileVideo } from 'lucide-react';
 import { getPartnerContext } from '@/lib/partner';
 import { canManageCreatives } from '@/lib/permissions';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { CreativeCard } from './CreativeCard';
 import { CreativeUploader } from './CreativeUploader';
 
@@ -15,7 +15,7 @@ export default async function CreativesPage() {
     redirect('/signup?setup=partner&next=/dashboard/creatives');
   }
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: creatives } = await supabase
     .from('ad_creatives')
     .select(

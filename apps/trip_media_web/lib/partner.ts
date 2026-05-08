@@ -1,4 +1,4 @@
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export interface PartnerContext {
   partner: {
@@ -14,7 +14,7 @@ export interface PartnerContext {
 }
 
 export async function getPartnerContext(): Promise<PartnerContext | null> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

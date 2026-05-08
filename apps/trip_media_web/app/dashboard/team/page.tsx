@@ -4,7 +4,7 @@ import { getPartnerContext } from '@/lib/partner';
 import { canInviteMembers } from '@/lib/permissions';
 import { ROLE_EXPLAINERS } from '@/lib/role-content';
 import { getSiteOrigin } from '@/lib/site-url';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { InviteMemberDialog } from './InviteMemberDialog';
 import { MemberRow } from './MemberRow';
 import { PendingInviteRow } from './PendingInviteRow';
@@ -18,7 +18,7 @@ export default async function TeamPage() {
     redirect('/signup?setup=partner&next=/dashboard/team');
   }
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -1,4 +1,4 @@
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import {
   logActionError,
   logActionInfo,
@@ -17,7 +17,7 @@ type TicketRow = {
 };
 
 export default async function SupportPage() {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase
     .from('support_tickets')
@@ -51,7 +51,7 @@ export default async function SupportPage() {
       redirect('/support?error=reason_required');
     }
 
-    const supabase = await createClerkSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();

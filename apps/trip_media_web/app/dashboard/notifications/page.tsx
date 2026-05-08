@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Bell } from 'lucide-react';
 import { getPartnerContext } from '@/lib/partner';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { MarkAllReadButton, MarkReadIconButton } from './NotificationActions';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +20,7 @@ export default async function NotificationsPage() {
     redirect('/signup?setup=partner&next=/dashboard/notifications');
   }
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: notifications } = await supabase
     .from('partner_notifications')
     .select('id, kind, title, body, link, read_at, created_at')

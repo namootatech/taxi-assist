@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { logActionError, logActionInfo } from '@/lib/server-action-logger';
 import { userFacingError } from '@/lib/user-facing-error';
 
@@ -66,7 +66,7 @@ export async function setCreativeStatusAction(
   }
 
   logActionInfo(action, 'started', { status: input.status });
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc('admin_set_creative_status', {
     p_creative_id: input.creativeId,
     p_status: input.status,
@@ -114,7 +114,7 @@ export async function setCampaignStatusAction(
   }
 
   logActionInfo(action, 'started', { status: input.status });
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc('admin_set_campaign_status', {
     p_campaign_id: input.campaignId,
     p_status: input.status,
@@ -157,7 +157,7 @@ export async function adjustCampaignDeliveryAction(
   if (missing) return { ok: false, error: missing };
 
   logActionInfo(action, 'started');
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc('admin_adjust_campaign_delivery', {
     p_campaign_id: input.campaignId,
     p_max_views: input.maxViews,
@@ -198,7 +198,7 @@ export async function freezeRewardAction(
   if (missing) return { ok: false, error: missing };
 
   logActionInfo(action, 'started');
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc('admin_freeze_reward', {
     p_ad_view_id: input.adViewId,
     p_reason: input.reason,
@@ -228,7 +228,7 @@ export async function reverseRewardAction(
   if (missing) return { ok: false, error: missing };
 
   logActionInfo(action, 'started');
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc('admin_reverse_reward', {
     p_ad_view_id: input.adViewId,
     p_reason: input.reason,
@@ -273,7 +273,7 @@ export async function setFraudSignalStatusAction(
   }
 
   logActionInfo(action, 'started', { status: input.status });
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc('admin_set_fraud_signal_status', {
     p_signal_id: input.signalId,
     p_status: input.status,
@@ -304,7 +304,7 @@ export async function setFraudSignalLevelAction(
   if (!input.signalId) return { ok: false, error: 'Pick a signal first.' };
 
   logActionInfo(action, 'started', { level: input.level });
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc('admin_set_fraud_signal_level', {
     p_signal_id: input.signalId,
     p_level: input.level,
@@ -341,7 +341,7 @@ export async function logFraudSignalAction(
   if (!input.summary || input.summary.trim().length < 4)
     return { ok: false, error: 'Describe what you saw.' };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc('admin_log_fraud_signal', {
     p_kind: input.kind,
     p_level: input.level,
@@ -384,7 +384,7 @@ export async function setPartnerStatusAction(
   );
   if (missing) return { ok: false, error: missing };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc('admin_set_partner_status', {
     p_partner_id: input.partnerId,
     p_status: input.status,
@@ -421,7 +421,7 @@ export async function adjustPartnerCreditsAction(
   );
   if (missing) return { ok: false, error: missing };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc('admin_adjust_partner_credits', {
     p_partner_id: input.partnerId,
     p_delta: Math.round(input.delta),
@@ -448,7 +448,7 @@ export async function setTripMediaSettingAction(
   const action = 'admin.trip_media.settings_update';
   if (!key) return { ok: false, error: 'Setting key is missing.' };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc('admin_set_trip_media_setting', {
     p_key: key,
     p_value: (value ?? {}) as Record<string, unknown>,
@@ -477,7 +477,7 @@ export interface ReportRunInput {
 export async function recordReportRunAction(
   input: ReportRunInput,
 ): Promise<ActionResult> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc('admin_record_report_run', {
     p_kind: input.kind,
     p_params: input.params,

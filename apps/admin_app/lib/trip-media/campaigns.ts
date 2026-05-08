@@ -1,4 +1,4 @@
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export type CampaignStatus =
   | 'DRAFT'
@@ -82,7 +82,7 @@ export async function loadCampaigns(filters: {
   partnerId?: string;
   limit?: number;
 }): Promise<Array<CampaignRow>> {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   let query = supabase
     .from('ad_campaigns')
@@ -180,7 +180,7 @@ export async function loadCampaigns(filters: {
 export async function loadCampaignCounts(): Promise<
   Record<CampaignStatus | 'ALL', number>
 > {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const statuses: Array<CampaignStatus> = [
     'DRAFT',
     'PENDING_REVIEW',

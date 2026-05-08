@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { Building2, KeyRound, ShieldOff, UserCircle } from 'lucide-react';
 import { getPartnerContext } from '@/lib/partner';
 import { canCloseOrg, canEditOrg } from '@/lib/permissions';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import {
   AccountForm,
   CloseWorkspaceButton,
@@ -19,7 +19,7 @@ export default async function SettingsPage() {
     redirect('/signup?setup=partner&next=/dashboard/settings');
   }
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const [
     { data: partner },
     {

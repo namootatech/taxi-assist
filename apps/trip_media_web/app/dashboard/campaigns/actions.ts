@@ -9,7 +9,7 @@ import {
   logActionInfo,
   logActionWarn,
 } from '@/lib/server-action-logger';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export interface CampaignActionResult {
   success: boolean;
@@ -58,7 +58,7 @@ export async function createCampaign(
     };
   }
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: creative } = await supabase
     .from('ad_creatives')
     .select('id, status, storage_path')
@@ -118,7 +118,7 @@ async function updateCampaignStatus(
   next: string,
   extra: Record<string, unknown> = {},
 ) {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from('ad_campaigns')
     .update({ status: next, updated_at: new Date().toISOString(), ...extra })
@@ -148,7 +148,7 @@ export async function submitCampaignForReview(
   if (!parsed.success)
     return { success: false, message: 'Invalid campaign reference.' };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: campaign } = await supabase
     .from('ad_campaigns')
     .select(
@@ -252,7 +252,7 @@ export async function resumeCampaign(
   if (!parsed.success)
     return { success: false, message: 'Invalid campaign reference.' };
 
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: subscription } = await supabase
     .from('partner_subscriptions')
     .select('status')

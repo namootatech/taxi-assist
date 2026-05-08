@@ -1,12 +1,12 @@
 import Link from 'next/link';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 function kpiLabel(n: number | null | undefined) {
   return typeof n === 'number' ? n.toLocaleString() : '—';
 }
 
 export default async function DashboardHome() {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const [
     { count: activeTrips },

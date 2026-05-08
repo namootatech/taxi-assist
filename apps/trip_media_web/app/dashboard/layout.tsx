@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { Toaster } from 'sonner';
 import { AppShell } from '@/components/layout/AppShell';
 import { getPartnerContext } from '@/lib/partner';
-import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
   robots: {
@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const supabase = await createClerkSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -1,39 +1,31 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { auth } from '@clerk/nextjs/server';
-import { getSupabasePublicEnv } from './env';
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
-export async function createClerkSupabaseServerClient() {
+export async function createSupabaseServerClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !anonKey) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  }
+
   const cookieStore = await cookies();
 
-  const { getToken } = await auth();
-  const { url, anonKey } = getSupabasePublicEnv();
-
-  return createServerClient(
-    url,
-    anonKey,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
-            });
-          } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
-        },
+  return createServerClient(url, anonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
       },
-      global: {
-        headers: {
-          Authorization: `Bearer ${await getToken()}`,
-        },
+      setAll(cookiesToSet) {
+        try {
+          for (const { name, value, options } of cookiesToSet) {
+            cookieStore.set(name, value, options);
+          }
+        } catch {
+          // Server Components can't set cookies; this is fine in those contexts.
+        }
       },
     },
-  );
+  });
 }
+
