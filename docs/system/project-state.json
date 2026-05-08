@@ -17,11 +17,12 @@
     "admin-rbac-route-capability-gates-2026-05-08",
     "driver-cancel-reason-enforcement-2026-05-08",
     "admin-build-typecheck-fix-2026-05-08",
-    "apd-state-engine-sync-2026-05-08"
+    "apd-state-engine-sync-2026-05-08",
+    "trip-website-foundation-scaffold-2026-05-08",
+    "trip-media-web-foundation-scaffold-2026-05-08",
+    "trip-web-observability-prep-2026-05-08"
   ],
   "pending": [
-    "apps-trip-media-web-scaffold",
-    "apps-trip-website-scaffold",
     "apps-rider-app-scaffold",
     "expand-admin-user-flows-ui-stubs",
     "expand-driver-user-flows-ui-stubs",
@@ -37,8 +38,8 @@
     "driver_app": "in-progress",
     "admin_app": "in-progress",
     "rider_app": "planning",
-    "trip_media_web": "planning",
-    "trip_website": "planning"
+    "trip_media_web": "in-progress",
+    "trip_website": "in-progress"
   },
-  "notes": "APD-State Engine 2026-05-08 refreshed docs/system/drift-report.md, project-summary.md, docs/planning/shared-services.md, and docs/planning/schema-gap-analysis.md. driver_app + admin_app are in progress with substantial code. rider_app, trip_media_web, and trip_website remain planning-only with no app folders. Remaining priority gaps: storage privacy hardening, rider trip request/location write paths, Trip Media partner billing/webhooks, admin Next proxy migration, and replacing the driver placeholder smoke test."
+  "notes": "Trip Web Foundations 2026-05-08 scaffolded apps/trip_website and apps/trip_media_web. Trip Website has a Next.js marketing shell, Unsplash MCP-sourced hero image metadata, GA hook, Sentry config, env example, and README. Trip Media Web has a Next.js + Supabase SSR auth shell, proxy-protected dashboard placeholder, GA hook, Sentry config, env example, and README. Sentry projects were created in org namoota/team namoota: trip-website and trip-media-web. GA4 provisioning is blocked pending account selection; Vercel deployment is blocked pending team/project selection; Pipedrive test/config setup is blocked at runnable action/person-org selection. Remaining priority gaps: apps-rider-app-scaffold, storage privacy hardening, rider trip request/location write paths, Trip Media partner billing/webhooks, admin Next proxy migration, and replacing the driver placeholder smoke test."
 }
