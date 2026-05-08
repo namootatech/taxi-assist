@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fffaf4;
+  --foreground: #122033;
+  --brand-red: #fe0000;
+  --brand-navy: #244065;
+  --sand: #f4dec1;
+  --cream: #fffaf4;
+  --surface: rgba(255, 255, 255, 0.86);
+  --surface-strong: #ffffff;
+  --border: rgba(36, 64, 101, 0.16);
+  --muted: rgba(18, 32, 51, 0.66);
+  --shadow: 0 24px 80px rgba(18, 32, 51, 0.14);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(254, 0, 0, 0.10), transparent 28rem),
+    linear-gradient(180deg, var(--cream), #ffffff 58%);
+  color: var(--foreground);
+  font-family: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.surface {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.focus-ring {
+  outline: none;
+}
+
+.focus-ring:focus-visible {
+  outline: 3px solid rgba(254, 0, 0, 0.45);
+  outline-offset: 3px;
+}

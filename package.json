@@ -3,12 +3,20 @@
   "private": true,
   "packageManager": "pnpm@10",
   "workspaces": [
-    "apps/admin_app"
+    "apps/admin_app",
+    "apps/trip_website",
+    "apps/trip_media_web"
   ],
   "scripts": {
     "dev:admin": "pnpm -C apps/admin_app dev",
     "build:admin": "pnpm -C apps/admin_app build",
-    "lint:admin": "pnpm -C apps/admin_app lint"
+    "lint:admin": "pnpm -C apps/admin_app lint",
+    "dev:trip-website": "npm --workspace apps/trip_website run dev",
+    "build:trip-website": "npm --workspace apps/trip_website run build",
+    "lint:trip-website": "npm --workspace apps/trip_website run lint",
+    "dev:trip-media-web": "npm --workspace apps/trip_media_web run dev",
+    "build:trip-media-web": "npm --workspace apps/trip_media_web run build",
+    "lint:trip-media-web": "npm --workspace apps/trip_media_web run lint"
   }
 }
 
