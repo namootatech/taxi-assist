@@ -14,7 +14,7 @@ export const DashboardPageNav = () => {
   const pathname = usePathname() ?? "/dashboard";
   const parentHref = useMemo(() => parentHrefForPathname(pathname), [pathname]);
   const crumbs = useMemo(() => breadcrumbsForPathname(pathname), [pathname]);
-  const backLabel = parentHref ? backLabelForParent(parentHref) : null;
+  const backLabel = parentHref ? backLabelForParent(parentHref) : undefined;
 
   return (
     <div

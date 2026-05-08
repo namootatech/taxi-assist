@@ -11,7 +11,7 @@ export default async function DashboardHome() {
   const [{ count: activeTrips }, { count: pendingDocs }, { data: recentAudit }, { data: recentTrips }] =
     await Promise.all([
       supabase.from("trips").select("id", { count: "exact", head: true }).in("status", ["requested", "accepted", "started"]),
-      supabase.from("documents").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      supabase.from("documents").select("id", { count: "exact", head: true }).eq("status", "PENDING"),
       supabase
         .from("audit_logs")
         .select("id, action, actor_role, entity_type, reason, created_at")

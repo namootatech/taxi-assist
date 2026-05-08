@@ -3,15 +3,25 @@
  * never raw stack traces or opaque Postgres codes as the only line.
  */
 export function userFacingError(error: unknown): string {
-  if (error == null) return "Something went wrong. Try again.";
-  const msg =
-    error instanceof Error
-      ? error.message
-      : typeof error === "string"
-        ? error
-        : String(error);
-  if (!msg.trim()) return "Something went wrong. Try again.";
+  if (error == null) return "Something went wrong. Try again."
+
+  // Supabase/PostgREST errors are often plain objects
+  if (typeof error === "object") {
+    const anyErr = error as Record<string, unknown>
+    const message = typeof anyErr["message"] === "string" ? anyErr["message"].trim() : ""
+    const details = typeof anyErr["details"] === "string" ? anyErr["details"].trim() : ""
+    const hint = typeof anyErr["hint"] === "string" ? anyErr["hint"].trim() : ""
+
+    const combined = [message, details, hint].filter(Boolean).join(" — ")
+    if (combined) return combined
+  }
+
+  const msg = error instanceof Error ? error.message : typeof error === "string" ? error : String(error)
+  if (!msg.trim()) return "Something went wrong. Try again."
   const lower = msg.toLowerCase();
+  if (lower.includes("schema cache") || lower.includes("could not find the '")) {
+    return "Profile update failed due to a system configuration issue. Please notify the dev team."
+  }
   if (
     lower.includes("fetch") ||
     lower.includes("failed to fetch") ||
@@ -47,5 +57,10 @@ export function userFacingError(error: unknown): string {
   ) {
     return "You don't have permission for this action. Ask a Super Admin.";
   }
-  return "Something went wrong. Try again.";
+
+  // If we don't recognize it, return the message we have (admins need actionable errors).
+  // Avoid returning likely stack traces.
+  if (msg.length <= 240 && !msg.includes("\n") && !msg.includes(" at ")) return msg
+
+  return "Something went wrong. Try again."
 }

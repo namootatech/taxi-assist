@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type Command = { title: string; subtitle?: string; href: string };
 
@@ -15,10 +15,10 @@ export function CommandPalette({
   onOpenChange: (open: boolean) => void;
 }) {
   const [query, setQuery] = useState("");
-
-  useEffect(() => {
-    if (!open) setQuery("");
-  }, [open]);
+  const handleClose = useCallback(() => {
+    setQuery("");
+    onOpenChange(false);
+  }, [onOpenChange]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -37,11 +37,11 @@ export function CommandPalette({
         e.preventDefault();
         onOpenChange(!open);
       }
-      if (e.key === "Escape") onOpenChange(false);
+      if (e.key === "Escape") handleClose();
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, onOpenChange]);
+  }, [open, onOpenChange, handleClose]);
 
   if (!open) return null;
 
@@ -51,7 +51,7 @@ export function CommandPalette({
       role="dialog"
       aria-modal="true"
       aria-label="Command palette"
-      onMouseDown={() => onOpenChange(false)}
+      onMouseDown={handleClose}
     >
       <div
         className="w-full max-w-xl rounded-2xl border border-token surface-1 shadow-[var(--shadow)]"
@@ -77,7 +77,7 @@ export function CommandPalette({
               <Link
                 key={c.href}
                 href={c.href}
-                onClick={() => onOpenChange(false)}
+                onClick={handleClose}
                 className="flex items-start justify-between gap-3 rounded-xl px-3 py-2 hover:bg-black/5"
               >
                 <div>

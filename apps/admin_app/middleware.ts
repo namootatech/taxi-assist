@@ -1,5 +1,27 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { hasCapability, type Capability } from "@/lib/permissions";
+
+const protectedRoutes: Array<{ prefix: string; capability?: Capability }> = [
+  { prefix: "/dashboard" },
+  { prefix: "/drivers", capability: "view_drivers" },
+  { prefix: "/riders", capability: "view_riders" },
+  { prefix: "/vehicles", capability: "view_vehicles" },
+  { prefix: "/verification", capability: "view_verification" },
+  { prefix: "/trips", capability: "view_trips" },
+  { prefix: "/payments", capability: "view_payments" },
+  { prefix: "/wallets", capability: "view_wallets" },
+  { prefix: "/ratings", capability: "view_ratings" },
+  { prefix: "/ads", capability: "view_ads" },
+  { prefix: "/support", capability: "view_support" },
+  { prefix: "/admins", capability: "manage_admins" },
+  { prefix: "/analytics", capability: "view_analytics" },
+  { prefix: "/settings", capability: "manage_settings" },
+  { prefix: "/audit", capability: "view_audit" },
+];
+
+const matchProtectedRoute = (pathname: string) =>
+  protectedRoutes.find((route) => pathname === route.prefix || pathname.startsWith(`${route.prefix}/`));
 
 export async function middleware(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -33,18 +55,9 @@ export async function middleware(request: NextRequest) {
   const isPublicAsset =
     pathname.startsWith("/_next") || pathname.startsWith("/favicon") || pathname.startsWith("/icons");
 
-  const isProtectedRoute =
-    pathname === "/dashboard" ||
-    pathname.startsWith("/drivers") ||
-    pathname.startsWith("/vehicles") ||
-    pathname.startsWith("/verification") ||
-    pathname.startsWith("/trips") ||
-    pathname.startsWith("/wallets") ||
-    pathname.startsWith("/ads") ||
-    pathname.startsWith("/support") ||
-    pathname.startsWith("/audit");
+  const protectedRoute = matchProtectedRoute(pathname);
 
-  if (!user && isProtectedRoute && !isPublicAsset) {
+  if (!user && protectedRoute && !isPublicAsset) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", request.nextUrl.pathname);
@@ -58,7 +71,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(dest);
   }
 
-  if (user && isProtectedRoute && !isPublicAsset) {
+  if (user && protectedRoute && !isPublicAsset) {
     const { data: adminProfile, error } = await supabase
       .from("admin_profiles")
       .select("role, disabled_at")
@@ -70,6 +83,16 @@ export async function middleware(request: NextRequest) {
       loginUrl.pathname = "/login";
       loginUrl.searchParams.set("error", "not_admin");
       return NextResponse.redirect(loginUrl);
+    }
+
+    if (
+      protectedRoute.capability &&
+      !hasCapability(adminProfile.role, protectedRoute.capability)
+    ) {
+      const dashboardUrl = request.nextUrl.clone();
+      dashboardUrl.pathname = "/dashboard";
+      dashboardUrl.search = "?error=forbidden";
+      return NextResponse.redirect(dashboardUrl);
     }
   }
 

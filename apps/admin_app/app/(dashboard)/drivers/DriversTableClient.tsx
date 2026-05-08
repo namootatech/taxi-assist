@@ -14,27 +14,47 @@ type DriverRow = {
   status: string | null;
   online_status: string | null;
   current_vehicle_id: string | null;
+  vehicle: {
+    vehicle_id: string;
+    registration_number: string | null;
+    make: string | null;
+    model: string | null;
+    status: string | null;
+  } | null;
   created_at: string | null;
   updated_at: string | null;
 };
 
 const tabs: Array<{ key: "approved" | "pending" | "rejected"; label: string; statuses: Array<string> }> = [
-  { key: "approved", label: "Approved", statuses: ["approved"] },
-  { key: "pending", label: "Pending", statuses: ["pending"] },
-  { key: "rejected", label: "Rejected", statuses: ["rejected"] },
+  { key: "approved", label: "Approved", statuses: ["APPROVED"] },
+  { key: "pending", label: "Pending", statuses: ["PENDING"] },
+  { key: "rejected", label: "Rejected", statuses: ["REJECTED"] },
 ];
 
 function StatusPill({ value }: { value: string | null }) {
-  const v = (value ?? "—").toLowerCase();
+  const v = (value ?? "—").toUpperCase();
   const cls =
-    v === "approved"
+    v === "APPROVED"
       ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-      : v === "pending"
+      : v === "PENDING"
         ? "border-amber-200 bg-amber-50 text-amber-800"
-        : v === "rejected"
+        : v === "REJECTED"
           ? "border-rose-200 bg-rose-50 text-rose-800"
           : "border-token bg-black/3 text-[color:var(--muted)]";
-  return <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${cls}`}>{v}</span>;
+  return <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${cls}`}>{v.toLowerCase()}</span>;
+}
+
+function VehiclePill({ value }: { value: string | null }) {
+  const v = (value ?? "—").toUpperCase();
+  const cls =
+    v === "APPROVED"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+      : v === "PENDING"
+        ? "border-amber-200 bg-amber-50 text-amber-800"
+        : v === "REJECTED"
+          ? "border-rose-200 bg-rose-50 text-rose-800"
+          : "border-token bg-black/3 text-[color:var(--muted)]";
+  return <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${cls}`}>{v.toLowerCase()}</span>;
 }
 
 function ReasonDialog({
@@ -132,7 +152,7 @@ export function DriversTableClient({ rows }: { rows: Array<DriverRow> }) {
     const q = query.trim().toLowerCase();
 
     return rows.filter((r) => {
-      const status = (r.status ?? "").toLowerCase();
+      const status = (r.status ?? "").toUpperCase();
       const inTab = allowed.size ? allowed.has(status) : true;
       if (!inTab) return false;
       if (!q) return true;
@@ -143,11 +163,7 @@ export function DriversTableClient({ rows }: { rows: Array<DriverRow> }) {
 
   async function setDriverStatus(driverId: string, nextStatus: string, reason: string) {
     const supabase = createSupabaseBrowserClient();
-    const now = new Date().toISOString();
-    const patch =
-      nextStatus === "REJECTED"
-        ? { status: nextStatus, rejection_reason: reason, rejected_at: now, approved_at: null }
-        : { status: nextStatus, rejection_reason: null, rejected_at: null, approved_at: now };
+    const patch = { status: nextStatus };
 
     const { error } = await supabase.from("profiles").update(patch).eq("id", driverId);
     if (error) throw error;
@@ -226,7 +242,21 @@ export function DriversTableClient({ rows }: { rows: Array<DriverRow> }) {
                     <StatusPill value={r.status} />
                   </td>
                   <td className="px-4 py-3">{r.online_status ?? "—"}</td>
-                  <td className="px-4 py-3">{r.current_vehicle_id ? <span className="text-xs muted">Assigned</span> : "—"}</td>
+                  <td className="px-4 py-3">
+                    {r.vehicle ? (
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="font-semibold">{r.vehicle.registration_number ?? "—"}</div>
+                          <VehiclePill value={r.vehicle.status} />
+                        </div>
+                        <div className="text-xs muted">
+                          {`${r.vehicle.make ?? ""} ${r.vehicle.model ?? ""}`.trim() || "—"}
+                        </div>
+                      </div>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <div className="inline-flex items-center gap-2">
                       <Link
@@ -237,14 +267,12 @@ export function DriversTableClient({ rows }: { rows: Array<DriverRow> }) {
                       </Link>
                       {tab === "pending" ? (
                         <>
-                          <button
-                            type="button"
+                          <Link
+                            href={`/verification?status=PENDING&driverId=${encodeURIComponent(r.id)}`}
                             className="rounded-lg bg-[var(--brand-navy-900)] px-3 py-1.5 text-sm font-semibold text-white hover:brightness-110"
-                            disabled={isPending}
-                            onClick={() => setConfirm({ driverId: r.id, nextStatus: "APPROVED" })}
                           >
-                            Approve
-                          </button>
+                            Review docs
+                          </Link>
                           <button
                             type="button"
                             className="rounded-lg border border-[var(--brand-red)] px-3 py-1.5 text-sm font-semibold text-[var(--brand-red)] hover:bg-[var(--brand-red)] hover:text-white"
@@ -273,19 +301,20 @@ export function DriversTableClient({ rows }: { rows: Array<DriverRow> }) {
 
       <ReasonDialog
         open={!!confirm}
-        title={confirm?.nextStatus === "REJECTED" ? "Reject driver application" : "Approve driver application"}
+        title="Reject driver application"
         description={
           confirm
             ? `This will update the driver account status to “${confirm.nextStatus}”, store the reason, and write an audit log.`
             : undefined
         }
-        confirmLabel={confirm?.nextStatus === "REJECTED" ? "Reject" : "Approve"}
-        destructive={confirm?.nextStatus === "REJECTED"}
-        requireReason={confirm?.nextStatus === "REJECTED"}
+        confirmLabel="Reject"
+        destructive
+        requireReason
         onOpenChange={(v) => (v ? null : setConfirm(null))}
         onConfirm={(reason) => {
           if (!confirm) return;
           const { driverId, nextStatus } = confirm;
+          if (nextStatus !== "REJECTED") return;
           startTransition(async () => {
             try {
               await setDriverStatus(driverId, nextStatus, reason);
