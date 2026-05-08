@@ -3,6 +3,9 @@
 .idea/
 .vscode/
 
+# Cursor — LobeHub / marketplace skills installed under repo (SKILL.md bundles; keep local)
+.cursor/skills/
+
 # Env files
 .env
 .env.*
