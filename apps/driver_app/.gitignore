@@ -8,6 +8,7 @@
 .buildlog/
 .history
 .svn/
+*.hprof
 migrate_working_dir/
 
 # IntelliJ
@@ -75,3 +76,4 @@ lib/generated_plugin_registrant.dart
 # Exceptions
 !.env.example
 .env
+.env.local

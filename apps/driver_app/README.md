@@ -22,7 +22,21 @@ Required keys:
 Notes:
 
 - `SUPABASE_ANON_KEY` is a publishable client key (it is expected to be shipped in the app), but **do not** put service-role keys in a client app.
-- There is also a `.env.local` file in this folder, but the app code currently reads **only** `assets/default.env`.
+- The app code reads **only** `assets/default.env`. For local/dev and for release builds, we keep that file in sync from `.env.local` via `tool/sync_env.dart`.
+
+### Setup `.env.local`
+
+```bash
+cd apps/driver_app
+cp .env.example .env.local
+```
+
+Edit `.env.local`, then sync it into the runtime asset:
+
+```bash
+cd apps/driver_app
+dart run tool/sync_env.dart
+```
 
 ## Install dependencies
 
@@ -84,4 +98,15 @@ dart run build_runner build --delete-conflicting-outputs
 cd apps/driver_app
 flutter analyze
 ```
+
+## Build a release APK (Android)
+
+This produces `build/app/outputs/flutter-apk/app-release.apk`.
+
+```bash
+cd apps/driver_app
+dart run tool/sync_env.dart && flutter build apk --release
+```
+
+For a longer, future-proof guide (including branding/icons/splash), see `BUILDING.md`.
 
