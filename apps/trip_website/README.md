@@ -35,4 +35,17 @@ Hero image selected through Pipedream Unsplash MCP:
 
 ## Current scope
 
-This is the foundation prompt only: layout, home page, legal placeholders, environment example, and deployment-ready app shell. Lead forms and CRM sync are deferred to later prompts.
+Implemented public routes:
+
+- `/`
+- `/about`
+- `/riders`
+- `/drivers`
+- `/advertise`
+- `/contact`
+- `/legal/privacy`
+- `/legal/terms`
+
+Lead capture writes to `marketing_leads` when `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are configured. Without those values, the form still returns a friendly confirmation for preview environments.
+
+CRM sync remains deferred until the production Pipedrive workflow is confirmed.

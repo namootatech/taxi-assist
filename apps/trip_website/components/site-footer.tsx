@@ -20,10 +20,10 @@ export function SiteFooter() {
         <div>
           <div className="text-sm font-bold">Legal</div>
           <div className="mt-3 flex flex-col gap-2 text-sm muted">
-            <Link className="focus-ring rounded-lg hover:text-[var(--brand-red)]" href="/privacy">
+            <Link className="focus-ring rounded-lg hover:text-[var(--brand-red)]" href="/legal/privacy">
               Privacy
             </Link>
-            <Link className="focus-ring rounded-lg hover:text-[var(--brand-red)]" href="/terms">
+            <Link className="focus-ring rounded-lg hover:text-[var(--brand-red)]" href="/legal/terms">
               Terms
             </Link>
           </div>

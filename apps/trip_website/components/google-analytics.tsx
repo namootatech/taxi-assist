@@ -2,8 +2,13 @@ import Script from "next/script"
 
 export function GoogleAnalytics() {
   const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
+  const propertyId = process.env.NEXT_PUBLIC_GA_PROPERTY_ID
 
   if (!measurementId) {
+    if (process.env.NODE_ENV === "development" && propertyId) {
+      console.info(`GA4 property ${propertyId} is configured, but NEXT_PUBLIC_GA_MEASUREMENT_ID is missing.`)
+    }
+
     return null
   }
 

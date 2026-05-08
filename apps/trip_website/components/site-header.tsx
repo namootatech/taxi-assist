@@ -2,10 +2,11 @@ import Link from "next/link"
 import { externalLinks } from "@/lib/links"
 
 const navItems = [
-  { href: "#riders", label: "Riders" },
-  { href: "#drivers", label: "Drivers" },
-  { href: "#advertise", label: "Advertise" },
-  { href: "#contact", label: "Contact" },
+  { href: "/about", label: "About" },
+  { href: "/riders", label: "Riders" },
+  { href: "/drivers", label: "Drivers" },
+  { href: "/advertise", label: "Advertise" },
+  { href: "/contact", label: "Contact" },
 ]
 
 export function SiteHeader() {
@@ -35,7 +36,7 @@ export function SiteHeader() {
 
         <Link
           href={externalLinks.tripMediaWeb}
-          className="focus-ring rounded-full bg-[var(--brand-navy)] px-4 py-2 text-sm font-bold text-white shadow-lg shadow-[rgba(36,64,101,0.18)]"
+          className="focus-ring rounded-full bg-[var(--brand-navy)] px-4 py-2 text-sm font-bold text-[#fffaf4] shadow-lg shadow-[rgba(36,64,101,0.18)]"
         >
           Advertise with us
         </Link>
