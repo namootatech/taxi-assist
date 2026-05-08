@@ -1,12 +1,19 @@
 {
   "name": "trip-platform",
   "private": true,
-  "packageManager": "pnpm@10",
+  "packageManager": "pnpm@10.0.0",
   "workspaces": [
     "apps/admin_app",
     "apps/trip_website",
     "apps/trip_media_web"
   ],
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@sentry/cli",
+      "sharp",
+      "unrs-resolver"
+    ]
+  },
   "scripts": {
     "dev:admin": "pnpm -C apps/admin_app dev",
     "build:admin": "pnpm -C apps/admin_app build",
@@ -16,7 +23,18 @@
     "lint:trip-website": "npm --workspace apps/trip_website run lint",
     "dev:trip-media-web": "npm --workspace apps/trip_media_web run dev",
     "build:trip-media-web": "npm --workspace apps/trip_media_web run build",
-    "lint:trip-media-web": "npm --workspace apps/trip_media_web run lint"
+    "lint:trip-media-web": "npm --workspace apps/trip_media_web run lint",
+    "vercel:link:trip-website": "vercel link --yes --scope ayabongaqwabis-projects --project trip-website --cwd apps/trip_website",
+    "vercel:link:trip-media-web": "vercel link --yes --scope ayabongaqwabis-projects --project trip-media-web --cwd apps/trip_media_web",
+    "vercel:link:admin": "vercel link --yes --scope ayabongaqwabis-projects --project trip-admin --cwd apps/admin_app",
+    "vercel:env:prod:trip-website": "bash -lc 'set -euo pipefail; while IFS= read -r line || [ -n \"$line\" ]; do [[ -z \"$line\" ]] && continue; [[ \"$line\" == \\#* ]] && continue; [[ \"$line\" == *=* ]] || continue; name=\"${line%%=*}\"; value=\"${line#*=}\"; [ -z \"$value\" ] && continue; printf %s \"$value\" | vercel env add \"$name\" production --scope ayabongaqwabis-projects --cwd apps/trip_website --force --yes >/dev/null; done < apps/trip_website/.env.local'",
+    "vercel:env:prod:trip-media-web": "bash -lc 'set -euo pipefail; while IFS= read -r line || [ -n \"$line\" ]; do [[ -z \"$line\" ]] && continue; [[ \"$line\" == \\#* ]] && continue; [[ \"$line\" == *=* ]] || continue; name=\"${line%%=*}\"; value=\"${line#*=}\"; [ -z \"$value\" ] && continue; printf %s \"$value\" | vercel env add \"$name\" production --scope ayabongaqwabis-projects --cwd apps/trip_media_web --force --yes >/dev/null; done < apps/trip_media_web/.env.local'",
+    "vercel:env:prod:admin": "bash -lc 'set -euo pipefail; while IFS= read -r line || [ -n \"$line\" ]; do [[ -z \"$line\" ]] && continue; [[ \"$line\" == \\#* ]] && continue; [[ \"$line\" == *=* ]] || continue; name=\"${line%%=*}\"; value=\"${line#*=}\"; [ -z \"$value\" ] && continue; printf %s \"$value\" | vercel env add \"$name\" production --scope ayabongaqwabis-projects --cwd apps/admin_app --force --yes >/dev/null; done < apps/admin_app/.env.local'",
+    "deploy:trip-website": "vercel deploy --prod --yes --scope ayabongaqwabis-projects --cwd apps/trip_website",
+    "deploy:trip-media-web": "vercel deploy --prod --yes --scope ayabongaqwabis-projects --cwd apps/trip_media_web",
+    "deploy:admin": "vercel deploy --prod --yes --scope ayabongaqwabis-projects --cwd apps/admin_app",
+    "sync-env:driver": "bash -lc 'cd apps/driver_app && dart run tool/sync_env.dart'",
+    "build:driver-apk": "bash -lc 'cd apps/driver_app && dart run tool/sync_env.dart && flutter build apk --release'"
   }
 }
 
