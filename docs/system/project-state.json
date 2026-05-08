@@ -20,7 +20,17 @@
     "apd-state-engine-sync-2026-05-08",
     "trip-website-foundation-scaffold-2026-05-08",
     "trip-media-web-foundation-scaffold-2026-05-08",
-    "trip-web-observability-prep-2026-05-08"
+    "trip-web-observability-prep-2026-05-08",
+    "trip-website-prompts-02-05-2026-05-08",
+    "trip-media-web-prompts-02-05-2026-05-08",
+    "trip-web-ga4-properties-2026-05-08",
+    "apd-state-engine-trip-web-sync-2026-05-08",
+    "web-seo-favicons-2026-05-08",
+    "trip-web-remote-supabase-migrations-2026-05-08",
+    "web-server-action-diagnostics-2026-05-08",
+    "trip-media-existing-user-signup-recovery-2026-05-08",
+    "trip-media-dashboard-cta-and-setup-routing-2026-05-08",
+    "trip-website-rider-updates-cta-fix-2026-05-08"
   ],
   "pending": [
     "apps-rider-app-scaffold",
@@ -30,9 +40,11 @@
     "align-global-apd-rules-numbered-vs-kebab-filenames",
     "rider-trip-request-rls-and-rpc-migrations",
     "storage-bucket-privacy-hardening",
-    "trip-media-partner-billing-migrations-and-webhooks",
     "admin-next-proxy-migration",
-    "replace-driver-placeholder-smoke-test"
+    "replace-driver-placeholder-smoke-test",
+    "trip-web-ga4-web-streams",
+    "trip-media-payfast-live-smoke-test",
+    "trip-website-crm-sync"
   ],
   "apps": {
     "driver_app": "in-progress",
@@ -41,5 +53,5 @@
     "trip_media_web": "in-progress",
     "trip_website": "in-progress"
   },
-  "notes": "Trip Web Foundations 2026-05-08 scaffolded apps/trip_website and apps/trip_media_web. Trip Website has a Next.js marketing shell, Unsplash MCP-sourced hero image metadata, GA hook, Sentry config, env example, and README. Trip Media Web has a Next.js + Supabase SSR auth shell, proxy-protected dashboard placeholder, GA hook, Sentry config, env example, and README. Sentry projects were created in org namoota/team namoota: trip-website and trip-media-web. GA4 provisioning is blocked pending account selection; Vercel deployment is blocked pending team/project selection; Pipedrive test/config setup is blocked at runnable action/person-org selection. Remaining priority gaps: apps-rider-app-scaffold, storage privacy hardening, rider trip request/location write paths, Trip Media partner billing/webhooks, admin Next proxy migration, and replacing the driver placeholder smoke test."
+  "notes": "Trip Website rider updates CTA 2026-05-08 now falls back to /contact?topic=rider instead of the missing #notify-rider anchor, and the homepage hero CTA uses that same rider update path. Trip Media dashboard CTA/routing 2026-05-08 made Add creatives, Plan campaigns, and Invite the team high-contrast CTA cards and fixed the signed-in no-partner redirect loop by allowing /signup?setup=partner as a workspace completion flow. Signup diagnostics 2026-05-08 added privacy-safe server action logs across trip_media_web, trip_website, and admin_app; Trip Media signup now recovers existing-user signup attempts by signing in and ensuring a partner workspace. Applied remote Supabase migrations for marketing_leads and Trip Media partner tables/policies to project twemeqotfdbgfbrrztcd. Remaining priority gaps: apps-rider-app-scaffold, storage privacy hardening, rider trip request/location write paths, admin Next proxy migration, replacing the driver placeholder smoke test, trip-web-ga4-web-streams, trip-media-payfast-live-smoke-test, and trip-website-crm-sync."
 }

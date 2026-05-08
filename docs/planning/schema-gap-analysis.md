@@ -11,8 +11,8 @@
 | **Driver prompts → APD 5-phase** | Low | Eight sequential prompts retained; see `drivers/prompts/INDEX.md` for mapping to foundation → deploy. |
 | **Platform PRD split** | Medium | Single `master-prd.md` / vision docs synthesized; reconcile with `supporting-documents/prd-overview.md` on next edit pass. |
 | **Rules vs filenames** | Low | Global `apd-rules.mdc` may reference `01-product-vision.md`; this repo uses **kebab-case** platform names—recorded in `docs/system/project-summary.md`. |
-| **Trip Media Web App** | Medium | **Planning done** (`docs/planning/trip_media_web/`). Remaining: migrations for `media_partners`, `partner_members`, `partner_subscriptions`, `ad_creatives`, `partner_billing_events`; extend `ad_campaigns` with `partner_id`; Edge Functions for Payfast/Paystack; `apps/trip_media_web` scaffold. See ADR 003. |
-| **Trip Website** | Low | **Planning done** (`docs/planning/trip_website/`). Remaining: `apps/trip_website`; optional `marketing_leads` + form Edge handler; content/marketing pass. |
+| **Trip Media Web App** | Low | **Prompts 01-05 implemented to MVP depth** (`apps/trip_media_web`). Partner tables/RLS/storage policies, package seeds, `ad_campaigns` partner extensions, Payfast-first webhook/checkout structure, Paystack placeholder hook, and partner UI surfaces exist. Remaining: provider credentials/callback verification, real creative file upload bytes, live subscription smoke tests, and production deployment. See ADR 003. |
+| **Trip Website** | Low | **Prompts 01-05 implemented to MVP depth** (`apps/trip_website`). Public routes, metadata, lead capture, `marketing_leads`, sitemap/robots, GA/Sentry hooks, and APD-Market copy exist. Remaining: production CRM/Pipedrive sync, GA4 web streams/measurement IDs, and production deployment. |
 
 ### Rider app — implementation gaps (planning)
 
@@ -82,21 +82,28 @@ The following items previously listed as admin schema gaps now have migration an
 
 Buckets are still recorded as public in the original storage migration. Admin verification uses signed URLs, but POPIA hardening still requires making buckets private and aligning storage object policies for driver/admin access.
 
-#### 3) Partner media & billing (Trip Media Web — add after/admin alongside ads)
+#### 3) Partner media & billing (Trip Media Web)
 
-Missing tables (planning detail in `trip_media_web/planning/data-model-and-app-entities.md`):
+Implemented in `supabase/migrations/20260508073600_trip_media_partner_core.sql` and `supabase/migrations/20260508073700_trip_media_partner_policies.sql`:
 
-- `public.media_partners`, `public.partner_members`, `public.ad_packages` (catalog)
-- `public.partner_subscriptions`, `public.partner_billing_events`
-- `public.ad_creatives` (partner-owned assets + moderation fields)
+- `public.media_partners`, `public.partner_members`, `public.ad_packages`, `public.partner_subscriptions`, `public.partner_billing_events`, and `public.ad_creatives`.
+- Partner-scoped RLS helper functions in `trip_private`.
+- Private `partner-ad-creatives` storage bucket with partner-prefix object policies.
+- `ad_campaigns.partner_id`, `creative_id`, `subscription_id`, `impression_cap`, and `schedule_band` transition fields.
+- Starter package catalog seeds.
 
-Extensions:
+Implemented in app/function code:
 
-- `ad_campaigns.partner_id` (nullable during transition), links to `ad_creatives` / subscription for entitlement checks
+- Partner signup creates a workspace and owner membership when service-role env vars are configured.
+- Billing pages generate Payfast checkout URLs and receive Payfast webhook/ITN callbacks idempotently.
+- Supabase Edge Function scaffolds exist for `payfast-webhook`, `create-payfast-checkout`, and Paystack placeholder handling.
 
-Edge:
+Remaining production gaps:
 
-- Webhook handlers for **Payfast** (primary ZA) and optional **Paystack**; idempotent processing
+- Payfast sandbox/live credentials and dashboard callback URLs need environment setup.
+- Payfast ITN/source validation and subscription state need a real sandbox transaction smoke test.
+- Paystack remains a secondary-provider placeholder, per the Payfast-first scope.
+- Creative metadata exists; actual signed upload bytes and preview URL flows still need end-to-end validation.
 
 #### 4) Rider trip/wallet/ad execution paths
 

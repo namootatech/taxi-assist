@@ -1,6 +1,6 @@
-# Trip Platform — design system (extracted)
+# Trip Platform design system (extracted)
 
-Generated per **Design System** skill — Mode 1: scan codebase → tokenize → document → preview.
+Built by scanning real CSS and page code, then writing tokens and a static preview alongside this note.
 
 ## Scope
 
@@ -9,85 +9,69 @@ Generated per **Design System** skill — Mode 1: scan codebase → tokenize →
 | `apps/trip_website` | Public marketing / Taxi Assist story | Light, warm cream (`#fffaf4`) with navy + red |
 | `apps/trip_media_web` | Partner / media portal shell | Dark navy command center |
 
-Shared brand anchors: **`--brand-red` `#fe0000`**, **`--brand-navy` `#244065`** (defined in both `globals.css` files).
+Brand anchors everywhere: `--brand-red` `#fe0000` and `--brand-navy` `#244065` in both apps' `globals.css`.
 
 ## Sources scanned
 
-- `apps/trip_website/app/globals.css` — CSS variables, `@theme inline`, body atmosphere, `.surface`, `.focus-ring`
-- `apps/trip_media_web/app/globals.css` — portal variables, `.panel`, focus treatment
-- `apps/trip_website/app/layout.tsx` — Geist + Geist Mono via `next/font`
-- `apps/trip_media_web/app/layout.tsx` — same font stack
-- `apps/trip_website/app/page.tsx`, `components/site-header.tsx` — composition, spacing, component recipes
+- `apps/trip_website/app/globals.css` — variables, `@theme inline`, body backdrop, `.surface`, `.focus-ring`
+- `apps/trip_media_web/app/globals.css` — portal vars, `.panel`, focus rings
+- `apps/trip_website/app/layout.tsx` and `apps/trip_media_web/app/layout.tsx` — Geist + Geist Mono via `next/font`
+- `apps/trip_website/app/page.tsx`, `components/site-header.tsx` — layout rhythm and component shapes
 - `apps/trip_media_web/app/page.tsx` — portal landing patterns
 
-## Competitive orientation (desktop research, not live capture)
+## Competitors (desk research only)
 
-Skill step 3 referenced industry patterns; **browser MCP was not available** in this environment, so this section is desk research only:
+Step 3 in the originating workflow assumed a browser MCP; this machine did not have that, so nothing here was captured live.
 
-1. **Bolt** — category leader; strong single accent (green), Inter after 2024 refresh, illustration-led marketing. Trip differentiates with **warm paper/cream marketing** vs Bolt’s cooler green-forward system.
-2. **Uber** — high-contrast black/white framing with localized accents; Trip aligns on **bold display type + restrained UI chrome**, but uses **SA-local copy** and **red/navy** instead of monochrome + green.
-3. **InDrive / regional ride apps** — often dense utilitarian dashboards; Trip Media’s **dark layered surfaces** (`--surface`, `--surface-2`) echo “operations console” clarity without adopting generic purple-gradient tropes.
+1. Bolt leans hard on green and (post-refresh) Inter, with illustration-heavy marketing. Trip pushes cream paper and red/navy instead of that cooler green-heavy lane.
+2. Uber often sticks to stark black/white with local accent tweaks. Trip still uses loud display type and quiet chrome, but the story is explicitly South Africa-first and anchored in red/navy, not monochrome + lime.
+3. Regional ride dashboards tend toward dense grids. Trip Media's stacked navy surfaces behave like an ops shell, minus the purple-gradient cliché kit.
 
-**Takeaway:** Keep **dual identity** deliberate: editorial warm marketing (`trip_website`) vs focused dark tooling (`trip_media_web`), unified by Geist + red/navy.
+Treat the split on purpose: warm editorial marketing in `trip_website`, subdued tooling chrome in `trip_media_web`. Geist plus the two brand colors are what bridges them.
 
-## Token rationale
+## Why the tokens look like this
 
-### Colour
+Color: Marketing uses `#122033` on cream so it reads warmer than bleach-white SaaS. Red lands on CTAs and small labels instead of drowning the hero. Portal blues calm long sessions; mint `#47d18c` is only for positive status.
 
-- **Cream/paper background + ink foreground** (`#122033`) on marketing: approachable, avoids sterile pure-white SaaS default.
-- **Brand red** sparingly on CTAs and labels: aligns with Taxi Assist urgency without painting entire heroes red.
-- **Portal deep blues** reduce eye strain for longer sessions; **success mint** `#47d18c` reserved for positive states inside product chrome.
+Typography: Geist carries the ultra-bold marketing headlines; mono is wired for IDs or code later if you need it. Hero tracking at `tracking-[-0.06em]` already matches shipped landings, so leave it aligned unless you refactor both sites together.
 
-### Typography
+Spacing: Both apps reuse `px-5` widening to `md:px-8`. Write that gutter down as a named token so new routes stop inventing sideways padding. Likewise call out max width: `max-w-7xl` for marketing shells vs `max-w-6xl` for portal content.
 
-- **Geist** pair gives modern neutral grotesque suitable for **heavy `font-black` marketing** headlines; mono available for codes/IDs later.
-- Tight negative tracking on heroes (`tracking-[-0.06em]`) matches current landing pages — keep consistent for brand voice.
+Radius / depth: The `2rem` / `1.5rem` radii read as Trip on hero frames and cards. Keep them consistent if you formalize components.
 
-### Spacing & layout
-
-- **Horizontal rhythm** `px-5` → `md:px-8` is consistent across both apps — promote to documented page gutter tokens.
-- **max-w-7xl** vs **max-w-6xl**: tighten naming (“marketing container” vs “app container”) so new pages don’t invent arbitrary widths.
-
-### Radius & depth
-
-- **Large radii** (`2rem`, `1.5rem`) are a recognizable Trip motif on cards and hero media — preserve for component library consistency.
-
-### Accessibility notes
-
-- Focus rings rely on **`outline: 3px solid` + offset** — good baseline; verify contrast on `:focus-visible` against both cream and `#07111f` backgrounds in a future QA pass.
-- Portal **muted text** at 66% white: check WCAG against `#0d1a2d` panels for smallest sizes (`text-xs`).
+Accessibility: Focus uses `outline: 3px` plus offset everywhere; sanity-check `:focus-visible` on cream versus `#07111f`. Portal muted copy at roughly 66% white needs an explicit contrast pass at `text-xs` on `#0d1a2d` panels.
 
 ## Outputs
 
 | Artifact | Purpose |
 | --- | --- |
-| `design-tokens.json` | Machine-readable consolidation for tooling / Figma Variables import pipelines |
-| `design-preview.html` | Self-contained swatch + type + component strip (light/dark toggle) |
+| `design-tokens.json` | Machine-readable consolidation for tooling or Figma |
+| `design-preview.html` | Static swatches and type strips with a marketing/portal toggle |
 
-## Mode 2 — snapshot audit (abbreviated)
+## Mode 2 snapshot audit (abbreviated)
 
 | Dimension | Score (0–10) | Note |
 | --- | ---: | --- |
-| Colour consistency | 8 | Shared brand vars; some hard-coded `text-slate-*` / `green-*` in portal preview cards — align to tokens |
-| Typography hierarchy | 8 | Clear h1/h2/h3 + eyebrow pattern |
-| Spacing rhythm | 7 | Tailwind scale used well; a few one-off radii |
-| Component consistency | 7 | `.surface` vs `.panel` split by app — document as intentional |
-| Responsive | 7 | Breakpoint usage present; verify tablet in-between |
-| Dark mode | N/A | Only portal is dark; marketing is light-only by design |
-| Animation | 6 | Minimal; `scroll-behavior` only — room for purposeful load staging |
-| A11y | 7 | Focus rings; needs contrast audit on muted |
-| Density | 8 | Marketing airy; portal balanced |
-| Polish | 7 | Hover states partial on links; loading/empty TBD |
+| Colour consistency | 8 | Shared brand vars; some hard-coded `text-slate-*` / `green-*` in portal preview cards should move onto tokens |
+| Typography hierarchy | 8 | Clear h1 / h2 / h3 stack plus eyebrows |
+| Spacing rhythm | 7 | Tailwind scale sticks; radius occasionally one-off |
+| Component consistency | 7 | `.surface` vs `.panel` differs by app, which is fine if documented |
+| Responsive | 7 | Breakpoints show up; double-check midsize widths |
+| Dark mode | N/A | Portal is intentionally dark-only; marketing stays light-only |
+| Animation | 6 | Mostly `scroll-behavior`; room for deliberate load choreography later |
+| A11y | 7 | Rings exist; muted copy still needs measurable contrast proof |
+| Density | 8 | Marketing stays airy; portal sits in the middle |
+| Polish | 7 | Hover is thin on some links; loading and empty states still open |
 
-## Mode 3 — slop check
+## Mode 3 slop check
 
-- **Gratuitous purple gradients:** not present; gradients are **red wash + neutral vertical blend** tied to brand.
-- **Generic glass cards:** marketing header uses **blur + translucent cream** with purpose (sticky nav); acceptable.
-- **Stock hero trope:** real photography in figure + caption — good.
-- **Random Inter stack:** avoided — **Geist** is the deliberate choice.
+- No purple-on-white hero gradient. Gradients are a light red wash plus a neutral vertical blend tied to brand.
+- Glassy header on marketing is blur + translucent cream for a sticky nav, not decoration for its own sake.
+- Hero uses real photography with a caption, not stock abstract blobs.
+- Font stack is Geist on purpose, not yet another drop-in Inter pass.
 
-## Recommended next steps
+## Next steps
 
-1. Replace hard-coded `text-slate-600`, `green-100`, etc. in `trip_media_web/app/page.tsx` with CSS variables or Tailwind theme extensions.
-2. Add shared `packages/ui-tokens` or re-export tokens from one `globals` partial if both apps should stay in lockstep.
-3. Run a formal contrast audit (axe / manual) on portal muted text and white-on-navy buttons.
+1. Replace hard-coded `text-slate-600`, `green-100`, and similar in `trip_media_web/app/page.tsx` with variables or theme tokens.
+2. If the two apps must stay matched, move shared primitives into something like `packages/ui-tokens` or a shared `globals` partial.
+3. Run axe or hand-check contrast on portal muted text and white-on-navy buttons.

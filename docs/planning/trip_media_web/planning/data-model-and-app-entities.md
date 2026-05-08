@@ -1,6 +1,8 @@
 # Trip Media Web App — Data model & entities
 
-**Note:** Tables below are **planning targets** until migrations exist. Align with `ad_campaigns` / `ad_views` in `schema-gap-analysis.md`.
+**Source:** codebase scan 2026-05-08.
+
+Tables below now have implementation anchors in `supabase/migrations/20260508073600_trip_media_partner_core.sql` and RLS/storage anchors in `supabase/migrations/20260508073700_trip_media_partner_policies.sql`. Production provider credentials and live subscription verification remain pending.
 
 ## Core entities
 
@@ -11,7 +13,7 @@
 - `billing_country`, `billing_currency` (default ZAR)
 - `billing_provider` (`payfast` | `paystack` | null pre-checkout)
 - `status` (`active` | `suspended` | `closed`)
-- `trial_ends_at` (nullable), `promotional_credits_balance` (numeric or bigint impressions—choose one unit)
+- `trial_ends_at` (nullable), `promotional_credits_balance` (integer impression-credit unit)
 - `created_at`, `updated_at`
 
 ### `partner_members`
@@ -20,7 +22,7 @@
 - `partner_id` → `media_partners`
 - `user_id` → `auth.users`
 - `role` (`owner` | `admin` | `operator` | `viewer`)
-- `invited_at`, `joined_at`, unique (`partner_id`, `user_id`)
+- `email` (nullable for invited members), `invited_at`, `joined_at`, unique (`partner_id`, `user_id`) and (`partner_id`, `email`)
 
 ### `ad_packages` (catalog)
 
@@ -45,7 +47,7 @@
 ### `partner_billing_events` (idempotency & audit)
 
 - `id` (uuid)
-- `provider`, `event_id` (unique per provider), `type`, `payload_json` (sanitized), `processed_at`
+- `provider`, `event_id` (unique per provider), `type`, `partner_id`, `payload_json` (sanitized), `processed_at`, `created_at`
 
 ### `ad_creatives` (partner-owned assets)
 
@@ -54,7 +56,7 @@
 - `title`, `cta_url`, `status` (`draft` | `pending_review` | `approved` | `rejected`)
 - `review_note`, `reviewed_by` (admin user id), `reviewed_at`
 
-### Extensions to `ad_campaigns` (planned)
+### Extensions to `ad_campaigns`
 
 - `partner_id` (nullable: internal campaigns without partner in early phase)
 - `creative_id` → `ad_creatives` (or join table if multi-creative rotation)
@@ -64,6 +66,8 @@
 ## Relationships
 
 - One partner → many members, creatives, campaigns, one active subscription convention (enforce in app or partial unique index).
+- Package catalog is seeded with `starter`, `growth`, and `network`.
+- Partner signup creates a partner, owner membership, starter trial subscription, and welcome credits when service-role env vars are configured.
 
 ## CRUD rules
 
@@ -76,4 +80,4 @@
 | Area | Level |
 |------|--------|
 | Partner/subscription split | **High** |
-| Exact column list for `ad_campaigns` | **Medium** until admin schema merged |
+| Exact column list for `ad_campaigns` | **High** for MVP fields implemented in migration; future delivery/reporting fields remain **Medium** |
