@@ -1,6 +1,6 @@
 export const externalLinks = {
-  riderApp: process.env.NEXT_PUBLIC_RIDER_APP_STORE_URL || "#notify-rider",
-  driverApp: process.env.NEXT_PUBLIC_DRIVER_APP_STORE_URL || "#driver-interest",
+  riderApp: process.env.NEXT_PUBLIC_RIDER_APP_STORE_URL || "/contact?topic=rider",
+  driverApp: process.env.NEXT_PUBLIC_DRIVER_APP_STORE_URL || "/contact?topic=driver",
   tripMediaWeb: process.env.NEXT_PUBLIC_TRIP_MEDIA_WEB_URL || "/advertise",
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "hello@trip.example",
 }

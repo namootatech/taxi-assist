@@ -56,7 +56,7 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
-                href="/riders"
+                href={externalLinks.riderApp}
                 className="focus-ring inline-flex items-center justify-center gap-2 rounded-full bg-[var(--brand-red)] px-6 py-3 text-sm font-black text-white shadow-xl shadow-red-500/20"
               >
                 Get rider updates <ArrowRight className="size-4" aria-hidden />
