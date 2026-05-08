@@ -1,37 +1,39 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server"
+import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
 
 export interface PartnerContext {
   partner: {
-    id: string
-    name: string
-    status: string
-    trial_ends_at: string | null
-    promotional_credits_balance: number
-  }
+    id: string;
+    name: string;
+    status: string;
+    trial_ends_at: string | null;
+    promotional_credits_balance: number;
+  };
   member: {
-    role: string
-  }
+    role: string;
+  };
 }
 
 export async function getPartnerContext(): Promise<PartnerContext | null> {
-  const supabase = await createSupabaseServerClient()
+  const supabase = await createClerkSupabaseServerClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    return null
+    return null;
   }
 
   const { data: member } = await supabase
-    .from("partner_members")
-    .select("role, partner:media_partners(id, name, status, trial_ends_at, promotional_credits_balance)")
-    .eq("user_id", user.id)
-    .not("joined_at", "is", null)
-    .maybeSingle()
+    .from('partner_members')
+    .select(
+      'role, partner:media_partners(id, name, status, trial_ends_at, promotional_credits_balance)',
+    )
+    .eq('user_id', user.id)
+    .not('joined_at', 'is', null)
+    .maybeSingle();
 
   if (!member?.partner || Array.isArray(member.partner)) {
-    return null
+    return null;
   }
 
   return {
@@ -39,5 +41,5 @@ export async function getPartnerContext(): Promise<PartnerContext | null> {
     member: {
       role: member.role,
     },
-  }
+  };
 }
