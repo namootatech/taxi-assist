@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:clerk_flutter/clerk_flutter.dart';
 
 import '../../core/constants/app_spacing.dart';
 import '../../core/utils/toast.dart';
@@ -264,6 +265,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         FilledButton.tonal(
           onPressed: () async {
             await ref.read(supabaseServiceProvider).signOut();
+            await ClerkAuth.of(context).signOut();
             ref.invalidate(currentDriverProvider);
           },
           child: const Text('Sign out'),

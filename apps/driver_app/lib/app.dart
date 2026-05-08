@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:clerk_flutter/clerk_flutter.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'core/constants/app_spacing.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_mode_provider.dart';
 import 'core/utils/safe_text.dart';
 import 'features/account/account_status_screen.dart';
 import 'features/auth/auth_routing.dart';
@@ -11,6 +15,7 @@ import 'features/marketing/landing_screen.dart';
 import 'features/onboarding/onboarding_flow_screen.dart';
 import 'features/onboarding/onboarding_gate_screen.dart';
 import 'features/onboarding/waiting_approval_screen.dart';
+import 'features/training/training_required_screen.dart';
 import 'features/documents/document_compliance_scope.dart';
 import 'shared/providers/app_providers.dart';
 import 'shared/widgets/main_shell.dart';
@@ -20,13 +25,47 @@ class TaxiAssistDriverApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return MaterialApp(
-      title: 'Taxi Assist Driver',
-      theme: AppTheme.dark,
-      builder: (context, child) =>
-          DocumentComplianceScope(child: child ?? const SizedBox.shrink()),
-      home: const _AppHome(),
-      debugShowCheckedModeBanner: false,
+    final themeMode = ref.watch(themeModeProvider);
+    final clerkPublishableKey = dotenv.env['CLERK_PUBLISHABLE_KEY'] ?? '';
+
+    return ClerkAuth(
+      config: ClerkAuthConfig(publishableKey: clerkPublishableKey),
+      child: MaterialApp(
+        title: 'Taxi Assist Driver',
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: themeMode,
+        navigatorObservers: [SentryNavigatorObserver()],
+        builder: (context, child) {
+          final content = DocumentComplianceScope(
+            child: child ?? const SizedBox.shrink(),
+          );
+
+          return Stack(
+            children: [
+              content,
+              Positioned(
+                top: 0,
+                right: 0,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 10, top: 8),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: IconButton(
+                        onPressed: () => ref.read(themeModeProvider.notifier).toggle(),
+                        icon: const Icon(Icons.brightness_6),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+        home: const _AppHome(),
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }
@@ -78,6 +117,7 @@ class _AppHome extends ConsumerWidget {
               AuthDestination.onboardingLinkVehicle => const OnboardingGateScreen(
                   destination: AuthDestination.onboardingLinkVehicle,
                 ),
+              AuthDestination.trainingRequired => const TrainingRequiredScreen(),
             };
           },
           loading: () => const Scaffold(

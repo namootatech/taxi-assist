@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:clerk_flutter/clerk_flutter.dart';
 
 import '../../core/constants/app_spacing.dart';
 import '../../features/auth/auth_routing.dart';
@@ -59,7 +60,7 @@ class _OnboardingGateScreenState extends ConsumerState<OnboardingGateScreen> {
   }
 
   String get _title => switch (widget.destination) {
-        AuthDestination.completeRegistration => 'Complete registration',
+        AuthDestination.completeRegistration => 'Finish setup',
         AuthDestination.onboardingLinkVehicle => 'Link your vehicle',
         _ => 'Onboarding',
       };
@@ -106,6 +107,7 @@ class _OnboardingGateScreenState extends ConsumerState<OnboardingGateScreen> {
             OutlinedButton(
               onPressed: () async {
                 await ref.read(supabaseServiceProvider).signOut();
+                await ClerkAuth.of(context).signOut();
                 ref.invalidate(currentDriverProvider);
               },
               child: const Text('Sign out'),

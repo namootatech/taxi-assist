@@ -77,7 +77,7 @@ class OnboardingSummaryStep extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Documents upload as PENDING until an administrator reviews them.',
+            'We’ll review your documents and notify you.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: scheme.onSurfaceVariant,
                 ),
@@ -123,7 +123,7 @@ class OnboardingSummaryStep extends ConsumerWidget {
           const SizedBox(height: 8),
           FilledButton(
             onPressed: st.isBusy ? null : () => n.submitRegistration(),
-            child: const Text('Submit registration'),
+            child: const Text('Send for review'),
           ),
           const SizedBox(height: 24),
         ],

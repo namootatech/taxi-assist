@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_spacing.dart';
@@ -189,7 +190,7 @@ class _WaitingApprovalScreenState extends ConsumerState<WaitingApprovalScreen> {
             expiryDate: expiryInput,
           );
       if (mounted) {
-        showAppToast('Document submitted for review');
+        showAppToast('Received — we’ll review soon.');
         await _load();
       }
     } catch (e, st) {
@@ -199,7 +200,12 @@ class _WaitingApprovalScreenState extends ConsumerState<WaitingApprovalScreen> {
         error: e,
         stackTrace: st,
       );
-      if (mounted) showAppToast('Upload failed. ${userFacingError(e)}', long: true);
+      if (mounted) {
+        showAppToast(
+          'Upload didn’t finish. Check your connection and try again.',
+          long: true,
+        );
+      }
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
@@ -208,7 +214,7 @@ class _WaitingApprovalScreenState extends ConsumerState<WaitingApprovalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Awaiting approval')),
+      appBar: AppBar(title: const Text('Review in progress')),
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
@@ -216,8 +222,7 @@ class _WaitingApprovalScreenState extends ConsumerState<WaitingApprovalScreen> {
           padding: AppSpacing.screenPadding,
           children: [
             Text(
-              'Your registration was submitted. We\'re reviewing your profile and '
-              'documents — updates appear below as we go.',
+              'We’re reviewing your documents — we’ll notify you.',
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 16),
@@ -229,7 +234,7 @@ class _WaitingApprovalScreenState extends ConsumerState<WaitingApprovalScreen> {
               ),
             if (!_loading && _docs.isEmpty && _error == null)
               const Text(
-                'No documents uploaded yet — finish your documents in onboarding.',
+                'No documents received yet — finish setup to upload everything you need.',
               ),
             ..._docs.map(
               (d) => Card(
@@ -268,7 +273,7 @@ class _WaitingApprovalScreenState extends ConsumerState<WaitingApprovalScreen> {
                                     child: CircularProgressIndicator(strokeWidth: 2),
                                   )
                                 : const Icon(Icons.upload_file),
-                            label: const Text('Resubmit document'),
+                            label: const Text('Upload again'),
                           ),
                         ),
                       ],
@@ -288,12 +293,13 @@ class _WaitingApprovalScreenState extends ConsumerState<WaitingApprovalScreen> {
             FilledButton(
               onPressed: () =>
                   ref.read(currentDriverProvider.notifier).refresh(),
-              child: const Text('Refresh profile'),
+              child: const Text('Refresh status'),
             ),
             const SizedBox(height: 8),
             OutlinedButton(
               onPressed: () async {
                 await ref.read(supabaseServiceProvider).signOut();
+                await ClerkAuth.of(context).signOut();
                 ref.invalidate(currentDriverProvider);
               },
               child: const Text('Sign out'),

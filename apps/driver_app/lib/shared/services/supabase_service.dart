@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/supabase_client.dart';
+import '../../core/observability/app_sentry.dart';
 import '../models/driver_profile.dart';
 
 /// Facade for Supabase calls (RLS assumed on backend).
@@ -62,8 +63,49 @@ class SupabaseService {
   Future<AuthResponse> signIn({
     required String email,
     required String password,
-  }) {
-    return auth.signInWithPassword(email: email.trim(), password: password);
+  }) async {
+    final emailDomain =
+        email.contains('@') ? email.trim().toLowerCase().split('@').last : 'invalid';
+    AppSentry.action('supabase.auth.sign_in.started', data: {'emailDomain': emailDomain});
+    try {
+      final res = await auth.signInWithPassword(
+        email: email.trim(),
+        password: password,
+      );
+      AppSentry.action('supabase.auth.sign_in.completed');
+      return res;
+    } catch (e, st) {
+      AppSentry.action(
+        'supabase.auth.sign_in.failed',
+        data: {'errorType': e.runtimeType.toString()},
+      );
+      await AppSentry.captureException(
+        e,
+        stackTrace: st,
+        hint: 'supabase.auth.sign_in',
+        context: {'emailDomain': emailDomain},
+      );
+      rethrow;
+    }
+  }
+
+  Future<AuthResponse> signInWithClerkToken({required String token}) async {
+    AppSentry.action('supabase.auth.sign_in_with_id_token.started');
+    try {
+      final res = await auth.signInWithIdToken(
+        provider: OAuthProvider.keycloak,
+        idToken: token,
+      );
+      AppSentry.action('supabase.auth.sign_in_with_id_token.completed');
+      return res;
+    } catch (e, st) {
+      await AppSentry.captureException(
+        e,
+        stackTrace: st,
+        hint: 'supabase.auth.sign_in_with_id_token',
+      );
+      rethrow;
+    }
   }
 
   /// Registers auth user and inserts a minimal `profiles` row (client path).
@@ -75,6 +117,9 @@ class SupabaseService {
     required String password,
     Map<String, dynamic>? profileData,
   }) async {
+    final emailDomain =
+        email.contains('@') ? email.trim().toLowerCase().split('@').last : 'invalid';
+    AppSentry.action('supabase.auth.sign_up.started', data: {'emailDomain': emailDomain});
     final response = await auth.signUp(
       email: email.trim(),
       password: password,
@@ -96,10 +141,20 @@ class SupabaseService {
 
     await client.from(_profilesTable).upsert(row, onConflict: 'id');
 
+    AppSentry.action('supabase.auth.sign_up.completed', data: {'hasProfileData': profileData != null});
     return response;
   }
 
-  Future<void> signOut() => auth.signOut();
+  Future<void> signOut() async {
+    AppSentry.action('supabase.auth.sign_out.started');
+    try {
+      await auth.signOut();
+      AppSentry.action('supabase.auth.sign_out.completed');
+    } catch (e, st) {
+      await AppSentry.captureException(e, stackTrace: st, hint: 'supabase.auth.sign_out');
+      rethrow;
+    }
+  }
 
   Future<void> resetPasswordForEmail(String email) {
     return auth.resetPasswordForEmail(email.trim());

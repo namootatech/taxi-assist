@@ -15,6 +15,9 @@ enum AuthDestination {
   /// Driver approved but must link vehicle.
   onboardingLinkVehicle,
 
+  /// Driver approved + vehicle linked, but training still required.
+  trainingRequired,
+
   /// Rejected / suspended / deactivated — show status screen.
   accountBlocked,
 
@@ -46,6 +49,9 @@ AuthDestination resolveDestination(DriverProfile? profile) {
       final vid = profile.currentVehicleId;
       if (vid == null || vid.isEmpty) {
         return AuthDestination.onboardingLinkVehicle;
+      }
+      if (!profile.trainingCompleted) {
+        return AuthDestination.trainingRequired;
       }
       return AuthDestination.mainShell;
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
@@ -39,5 +40,41 @@ Future<void> main() async {
     ),
   );
 
-  runApp(const ProviderScope(child: TaxiAssistDriverApp()));
+  final sentryDsn = dotenv.env['SENTRY_DSN'] ?? '';
+
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = sentryDsn;
+      options.environment =
+          dotenv.env['SENTRY_ENV'] ??
+          (const bool.fromEnvironment('dart.vm.product')
+              ? 'production'
+              : 'development');
+      options.release = dotenv.env['SENTRY_RELEASE'];
+
+      options.enableLogs = true;
+      options.sendDefaultPii = dotenv.env['SENTRY_SEND_PII'] == 'true';
+
+      options.tracesSampleRate =
+          const bool.fromEnvironment('dart.vm.product') ? 0.2 : 1.0;
+
+      // Session Replay (Android/iOS). When debugging login, keep this high.
+      options.replay.sessionSampleRate =
+          const bool.fromEnvironment('dart.vm.product') ? 0.2 : 0.0;
+      options.replay.onErrorSampleRate = 1.0;
+
+      // Attach screenshots for better UI debugging (Android/iOS).
+      options.attachScreenshot = true;
+
+      // Keep breadcrumbs verbose while we diagnose production auth issues.
+      options.maxBreadcrumbs = 200;
+    },
+    appRunner: () {
+      runApp(
+        SentryWidget(
+          child: const ProviderScope(child: TaxiAssistDriverApp()),
+        ),
+      );
+    },
+  );
 }

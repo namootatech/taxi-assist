@@ -21,7 +21,7 @@ class OnboardingFlowScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Registration · step ${st.stepIndex + 1} of 3'),
+        title: Text('Finish setup · Step ${st.stepIndex + 1} of 3'),
         leading: st.stepIndex > 0 && !st.isBusy
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),

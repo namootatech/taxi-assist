@@ -9,6 +9,7 @@ import '../../features/trip/models/trip.dart';
 import '../../features/trip/models/trip_status.dart';
 import '../../features/trip/trip_hub_screen.dart';
 import '../../features/trip/trip_providers.dart';
+import '../../core/theme/theme_mode_provider.dart';
 import '../providers/app_providers.dart';
 
 /// Main shell: five tabs after full driver approval (prompt 1 + business-logic.md).
@@ -35,6 +36,16 @@ class _MainShellState extends ConsumerState<MainShell> {
     });
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Taxi Assist Driver'),
+        actions: [
+          IconButton(
+            tooltip: 'Switch theme',
+            onPressed: () => ref.read(themeModeProvider.notifier).toggle(),
+            icon: const Icon(Icons.brightness_6),
+          ),
+        ],
+      ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
         child: switch (index) {
