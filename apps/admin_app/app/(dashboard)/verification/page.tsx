@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { logActionError, logActionInfo, logActionWarn } from "@/lib/server-action-logger";
 import { userFacingError } from "@/lib/user-facing-error";
 import { RealtimeRefresh } from "@/components/realtime/RealtimeRefresh";
 import { VerificationQueueClient } from "./VerificationQueueClient";
@@ -127,11 +128,14 @@ export default async function VerificationPage({
     const docId = String(formData.get("document_id") ?? "");
     const decision = String(formData.get("decision") ?? "");
     const reason = String(formData.get("reason") ?? "");
+    logActionInfo("admin.verification.review", "started", { docId, decision, hasReason: Boolean(reason.trim()) });
 
     if (!docId || (decision !== "APPROVED" && decision !== "DECLINED")) {
+      logActionWarn("admin.verification.review", "invalid_request", { docId, decision });
       return { ok: false as const, error: "Invalid request" };
     }
     if (!reason.trim()) {
+      logActionWarn("admin.verification.review", "missing_reason", { docId, decision });
       return { ok: false as const, error: "Reason is required" };
     }
 
@@ -141,6 +145,7 @@ export default async function VerificationPage({
       error: userErr,
     } = await supabase.auth.getUser();
     if (userErr || !user) {
+      logActionError("admin.verification.review", "not_authenticated", userErr, { docId, decision });
       return { ok: false as const, error: "Not authenticated" };
     }
 
@@ -155,6 +160,7 @@ export default async function VerificationPage({
       .eq("document_id", docId);
 
     if (updateErr) {
+      logActionError("admin.verification.review", "update_failed", updateErr, { docId, decision, userId: user.id });
       return { ok: false as const, error: userFacingError(updateErr) };
     }
 
@@ -166,6 +172,7 @@ export default async function VerificationPage({
       p_metadata: {},
     });
 
+    logActionInfo("admin.verification.review", "completed", { docId, decision, userId: user.id });
     return { ok: true as const };
   }
 

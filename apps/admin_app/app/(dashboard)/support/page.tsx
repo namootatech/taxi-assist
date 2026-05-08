@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { logActionError, logActionInfo, logActionWarn } from "@/lib/server-action-logger";
 import { userFacingError } from "@/lib/user-facing-error";
 import { redirect } from "next/navigation";
 
@@ -25,22 +26,35 @@ export default async function SupportPage() {
     const ticketId = String(formData.get("ticket_id") ?? "");
     const status = String(formData.get("status") ?? "");
     const reason = String(formData.get("reason") ?? "");
+    logActionInfo("admin.support.set_status", "started", { ticketId, status, hasReason: Boolean(reason.trim()) });
 
-    if (!ticketId || !status) redirect("/support?error=invalid_request");
-    if (!reason.trim()) redirect("/support?error=reason_required");
+    if (!ticketId || !status) {
+      logActionWarn("admin.support.set_status", "invalid_request", { ticketId, status });
+      redirect("/support?error=invalid_request");
+    }
+    if (!reason.trim()) {
+      logActionWarn("admin.support.set_status", "missing_reason", { ticketId, status });
+      redirect("/support?error=reason_required");
+    }
 
     const supabase = await createSupabaseServerClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) redirect("/login");
+    if (!user) {
+      logActionWarn("admin.support.set_status", "not_authenticated", { ticketId, status });
+      redirect("/login");
+    }
 
     const { error } = await supabase
       .from("support_tickets")
       .update({ status })
       .eq("ticket_id", ticketId);
 
-    if (error) redirect(`/support?error=${encodeURIComponent(userFacingError(error))}`);
+    if (error) {
+      logActionError("admin.support.set_status", "update_failed", error, { ticketId, status, userId: user.id });
+      redirect(`/support?error=${encodeURIComponent(userFacingError(error))}`);
+    }
 
     await supabase.rpc("admin_audit_log", {
       p_action: "support_ticket.status_update",
@@ -50,6 +64,7 @@ export default async function SupportPage() {
       p_metadata: { status },
     });
 
+    logActionInfo("admin.support.set_status", "completed", { ticketId, status, userId: user.id });
     redirect("/support");
   }
 

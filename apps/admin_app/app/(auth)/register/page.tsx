@@ -1,5 +1,6 @@
 import { redirect, unstable_rethrow } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { logActionError, logActionInfo } from "@/lib/server-action-logger";
 import { userFacingError } from "@/lib/user-facing-error";
 import Image from "next/image";
 
@@ -19,20 +20,24 @@ export default async function RegisterPage({
 
   async function register(formData: FormData) {
     "use server";
-    const email = String(formData.get("email") ?? "");
+    const email = String(formData.get("email") ?? "").trim().toLowerCase();
     const password = String(formData.get("password") ?? "");
+    const emailDomain = email.includes("@") ? email.split("@").at(-1) : "invalid";
+    logActionInfo("admin.register", "started", { emailDomain });
 
     try {
       const supabase = await createSupabaseServerClient();
 
       const { error: signUpErr } = await supabase.auth.signUp({ email, password });
       if (signUpErr) {
+        logActionError("admin.register", "auth_signup_failed", signUpErr, { emailDomain });
         redirect(`/register?error=${encodeURIComponent(userFacingError(signUpErr))}`);
       }
 
       // Ensure we have a session so RLS policies allow inserting into admin_profiles.
       const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
       if (signInErr) {
+        logActionError("admin.register", "auth_signin_after_signup_failed", signInErr, { emailDomain });
         redirect(`/login?error=${encodeURIComponent(userFacingError(signInErr))}`);
       }
 
@@ -50,12 +55,15 @@ export default async function RegisterPage({
       });
 
       if (insertErr) {
+        logActionError("admin.register", "admin_profile_insert_failed", insertErr, { userId: user.id });
         redirect(`/register?error=${encodeURIComponent(userFacingError(insertErr))}`);
       }
 
+      logActionInfo("admin.register", "completed", { userId: user.id });
       redirect("/dashboard");
     } catch (err) {
       unstable_rethrow(err);
+      logActionError("admin.register", "unexpected_failed", err, { emailDomain });
       redirect(`/register?error=${encodeURIComponent(userFacingError(err))}`);
     }
   }

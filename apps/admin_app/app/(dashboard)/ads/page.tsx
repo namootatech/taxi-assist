@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { logActionError, logActionInfo } from "@/lib/server-action-logger";
 import { userFacingError } from "@/lib/user-facing-error";
 import { redirect } from "next/navigation";
 
@@ -28,6 +29,7 @@ export default async function AdsPage() {
     const advertiser = String(formData.get("advertiser") ?? "");
     const videoPath = String(formData.get("video_path") ?? "");
     const reward = Number(formData.get("reward_per_view") ?? 0);
+    logActionInfo("admin.ads.create", "started", { hasAdvertiser: Boolean(advertiser), hasVideoPath: Boolean(videoPath), reward });
 
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.from("ad_campaigns").insert({
@@ -38,7 +40,12 @@ export default async function AdsPage() {
       status: "ACTIVE",
     });
 
-    if (error) redirect(`/ads?error=${encodeURIComponent(userFacingError(error))}`);
+    if (error) {
+      logActionError("admin.ads.create", "insert_failed", error, { hasAdvertiser: Boolean(advertiser), hasVideoPath: Boolean(videoPath) });
+      redirect(`/ads?error=${encodeURIComponent(userFacingError(error))}`);
+    }
+
+    logActionInfo("admin.ads.create", "completed", { hasAdvertiser: Boolean(advertiser) });
     redirect("/ads");
   }
 

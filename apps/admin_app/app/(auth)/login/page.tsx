@@ -1,5 +1,6 @@
 import { redirect, unstable_rethrow } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { logActionError, logActionInfo } from "@/lib/server-action-logger";
 import { userFacingError } from "@/lib/user-facing-error";
 import Image from "next/image";
 
@@ -21,22 +22,27 @@ export default async function LoginPage({
 
   async function signIn(formData: FormData) {
     "use server";
-    const email = String(formData.get("email") ?? "");
+    const email = String(formData.get("email") ?? "").trim().toLowerCase();
     const password = String(formData.get("password") ?? "");
+    const emailDomain = email.includes("@") ? email.split("@").at(-1) : "invalid";
     const safeNext =
       next && next.startsWith("/") && !next.startsWith("//") ? next : "";
+    logActionInfo("admin.login", "started", { emailDomain, safeNext });
 
     try {
       const supabase = await createSupabaseServerClient();
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
+        logActionError("admin.login", "auth_signin_failed", error, { emailDomain });
         redirect(
           `/login?error=${encodeURIComponent(userFacingError(error))}${safeNext ? `&next=${encodeURIComponent(safeNext)}` : ""}`,
         );
       }
+      logActionInfo("admin.login", "completed", { emailDomain, safeNext });
       redirect(safeNext || "/");
     } catch (err) {
       unstable_rethrow(err);
+      logActionError("admin.login", "unexpected_failed", err, { emailDomain });
       redirect(
         `/login?error=${encodeURIComponent(userFacingError(err))}${safeNext ? `&next=${encodeURIComponent(safeNext)}` : ""}`,
       );

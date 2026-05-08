@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { allowedNavForRole } from "@/lib/permissions";
+import { logActionError, logActionInfo } from "@/lib/server-action-logger";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default async function DashboardLayout({
@@ -29,7 +30,12 @@ export default async function DashboardLayout({
       onSignOut={async () => {
         "use server";
         const supabase = await createSupabaseServerClient();
-        await supabase.auth.signOut();
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          logActionError("admin.signout", "auth_signout_failed", error);
+        } else {
+          logActionInfo("admin.signout", "completed");
+        }
       }}
     >
       {children}
