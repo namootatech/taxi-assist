@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { userFacingError } from "@/lib/user-facing-error";
 import Image from "next/image";
 
 export default async function LoginPage({
@@ -22,13 +23,24 @@ export default async function LoginPage({
     "use server";
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
+    const safeNext =
+      next && next.startsWith("/") && !next.startsWith("//") ? next : "";
 
-    const supabase = await createSupabaseServerClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      redirect(`/login?error=${encodeURIComponent(error.message)}${next ? `&next=${encodeURIComponent(next)}` : ""}`);
+    try {
+      const supabase = await createSupabaseServerClient();
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        redirect(
+          `/login?error=${encodeURIComponent(userFacingError(error))}${safeNext ? `&next=${encodeURIComponent(safeNext)}` : ""}`,
+        );
+      }
+      redirect(safeNext || "/");
+    } catch (err) {
+      unstable_rethrow(err);
+      redirect(
+        `/login?error=${encodeURIComponent(userFacingError(err))}${safeNext ? `&next=${encodeURIComponent(safeNext)}` : ""}`,
+      );
     }
-    redirect(next || "/");
   }
 
   return (

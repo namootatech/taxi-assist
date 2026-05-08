@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { userFacingError } from "@/lib/user-facing-error";
 
 type VehicleRow = {
   vehicle_id: string;
@@ -28,7 +29,7 @@ export default async function VehiclesPage() {
     return (
       <div className="p-6">
         <h1 className="text-lg font-semibold">Vehicles</h1>
-        <p className="mt-2 text-sm text-red-600">{error.message}</p>
+        <p className="mt-2 text-sm text-red-600">{userFacingError(error)}</p>
       </div>
     );
   }

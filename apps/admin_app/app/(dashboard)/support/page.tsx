@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { userFacingError } from "@/lib/user-facing-error";
 import { redirect } from "next/navigation";
 
 type TicketRow = {
@@ -39,7 +40,7 @@ export default async function SupportPage() {
       .update({ status })
       .eq("ticket_id", ticketId);
 
-    if (error) redirect(`/support?error=${encodeURIComponent(error.message)}`);
+    if (error) redirect(`/support?error=${encodeURIComponent(userFacingError(error))}`);
 
     await supabase.rpc("admin_audit_log", {
       p_action: "support_ticket.status_update",
@@ -56,7 +57,7 @@ export default async function SupportPage() {
     return (
       <div className="p-6">
         <h1 className="text-lg font-semibold">Support</h1>
-        <p className="mt-2 text-sm text-red-600">{error.message}</p>
+        <p className="mt-2 text-sm text-red-600">{userFacingError(error)}</p>
       </div>
     );
   }

@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { userFacingError } from "@/lib/user-facing-error";
 
 type DriverRow = {
   id: string;
@@ -291,7 +292,7 @@ export function DriversTableClient({ rows }: { rows: Array<DriverRow> }) {
               toast.success("Driver updated");
               router.refresh();
             } catch (e) {
-              toast.error(e instanceof Error ? e.message : "Failed to update driver");
+              toast.error(userFacingError(e));
             }
           });
         }}

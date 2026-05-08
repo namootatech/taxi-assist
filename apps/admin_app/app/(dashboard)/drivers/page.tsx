@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { userFacingError } from "@/lib/user-facing-error";
 import { DriversTableClient } from "./DriversTableClient";
 
 type DriverRow = {
@@ -27,7 +28,7 @@ export default async function DriversPage() {
     return (
       <div>
         <h1 className="text-lg font-semibold">Drivers</h1>
-        <p className="mt-2 text-sm text-red-600">{error.message}</p>
+        <p className="mt-2 text-sm text-red-600">{userFacingError(error)}</p>
       </div>
     );
   }

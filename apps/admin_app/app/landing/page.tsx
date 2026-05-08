@@ -1,11 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 
-const unsplashAttribution = {
-  href: "https://unsplash.com/?utm_source=trip-platform&utm_medium=referral",
-  label: "Unsplash",
-};
-
 export default function AdminLandingPage() {
   return (
     <main className="min-h-dvh bg-zinc-950 text-zinc-50">
@@ -90,16 +85,7 @@ export default function AdminLandingPage() {
               </div>
 
               <p className="mt-6 text-xs text-white/50">
-                Background photo via{" "}
-                <a
-                  className="underline underline-offset-4 hover:text-white"
-                  href={unsplashAttribution.href}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {unsplashAttribution.label}
-                </a>
-                .
+                Illustrative preview — KPIs are wired on the dashboard.
               </p>
             </div>
 
@@ -150,9 +136,7 @@ export default function AdminLandingPage() {
       <footer className="border-t border-white/10">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-10 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between">
           <div>Trip Admin • Internal tool</div>
-          <div>
-            Need access? Ask an ops owner to add you to <code>admin_profiles</code>.
-          </div>
+          <div>Need access? Ask your ops owner to invite you to the admin console.</div>
         </div>
       </footer>
     </main>

@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { userFacingError } from "@/lib/user-facing-error";
 import { AdminsClient } from "./AdminsClient";
 
 type AdminRow = {
@@ -21,7 +22,7 @@ export default async function AdminsPage() {
     return (
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Admins</h1>
-        <p className="mt-2 text-sm text-red-600">{error.message}</p>
+        <p className="mt-2 text-sm text-red-600">{userFacingError(error)}</p>
       </div>
     );
   }

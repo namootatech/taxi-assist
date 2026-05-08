@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { userFacingError } from "@/lib/user-facing-error";
 
 export default async function DriverDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -15,7 +16,7 @@ export default async function DriverDetailPage({ params }: { params: Promise<{ i
     return (
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Driver</h1>
-        <p className="mt-2 text-sm text-red-600">{error.message}</p>
+        <p className="mt-2 text-sm text-red-600">{userFacingError(error)}</p>
       </div>
     );
   }

@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { userFacingError } from "@/lib/user-facing-error";
 import Image from "next/image";
 
 export default async function RegisterPage({
@@ -21,37 +22,42 @@ export default async function RegisterPage({
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
 
-    const supabase = await createSupabaseServerClient();
+    try {
+      const supabase = await createSupabaseServerClient();
 
-    const { error: signUpErr } = await supabase.auth.signUp({ email, password });
-    if (signUpErr) {
-      redirect(`/register?error=${encodeURIComponent(signUpErr.message)}`);
+      const { error: signUpErr } = await supabase.auth.signUp({ email, password });
+      if (signUpErr) {
+        redirect(`/register?error=${encodeURIComponent(userFacingError(signUpErr))}`);
+      }
+
+      // Ensure we have a session so RLS policies allow inserting into admin_profiles.
+      const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInErr) {
+        redirect(`/login?error=${encodeURIComponent(userFacingError(signInErr))}`);
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        redirect(`/login?error=${encodeURIComponent("Please sign in")}`);
+      }
+
+      const { error: insertErr } = await supabase.from("admin_profiles").insert({
+        user_id: user.id,
+        role: "support",
+        disabled_at: null,
+      });
+
+      if (insertErr) {
+        redirect(`/register?error=${encodeURIComponent(userFacingError(insertErr))}`);
+      }
+
+      redirect("/dashboard");
+    } catch (err) {
+      unstable_rethrow(err);
+      redirect(`/register?error=${encodeURIComponent(userFacingError(err))}`);
     }
-
-    // Ensure we have a session so RLS policies allow inserting into admin_profiles.
-    const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInErr) {
-      redirect(`/login?error=${encodeURIComponent(signInErr.message)}`);
-    }
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      redirect(`/login?error=${encodeURIComponent("Please sign in")}`);
-    }
-
-    const { error: insertErr } = await supabase.from("admin_profiles").insert({
-      user_id: user.id,
-      role: "support",
-      disabled_at: null,
-    });
-
-    if (insertErr) {
-      redirect(`/register?error=${encodeURIComponent(insertErr.message)}`);
-    }
-
-    redirect("/dashboard");
   }
 
   return (

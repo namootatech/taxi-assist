@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { userFacingError } from "@/lib/user-facing-error";
 import { ConfirmDialog } from "@/components/feedback/ConfirmDialog";
 
 type WalletRow = {
@@ -191,7 +192,7 @@ export function WalletsClient({
               setForm((v) => ({ ...v, amount: "", reason: "" }));
               router.refresh();
             } catch (e) {
-              toast.error(e instanceof Error ? e.message : "Failed");
+              toast.error(userFacingError(e));
             }
           });
         }}

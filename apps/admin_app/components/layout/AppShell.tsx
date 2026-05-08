@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
+import { DashboardPageNav } from "@/components/layout/DashboardPageNav";
 
 type NavItem = { href: string; label: string };
 
@@ -173,15 +174,20 @@ export function AppShell({
                 {g.label}
               </div>
               <div className="flex flex-col gap-1">
-                {g.items.map((it) => (
-                  <NavLink
-                    key={it.href}
-                    href={it.href}
-                    label={it.label}
-                    active={pathname === it.href}
-                    collapsed={collapsed}
-                  />
-                ))}
+                {g.items.map((it) => {
+                  const active =
+                    pathname === it.href ||
+                    (it.href !== "/dashboard" && pathname.startsWith(`${it.href}/`));
+                  return (
+                    <NavLink
+                      key={it.href}
+                      href={it.href}
+                      label={it.label}
+                      active={active}
+                      collapsed={collapsed}
+                    />
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -226,6 +232,8 @@ export function AppShell({
             </div>
           </div>
         </header>
+
+        <DashboardPageNav />
 
         <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
       </div>

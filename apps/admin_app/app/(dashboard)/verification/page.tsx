@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { userFacingError } from "@/lib/user-facing-error";
 import { redirect } from "next/navigation";
 import { RealtimeRefresh } from "@/components/realtime/RealtimeRefresh";
 import { VerificationQueueClient } from "./VerificationQueueClient";
@@ -92,7 +93,7 @@ export default async function VerificationPage({
       .eq("document_id", docId);
 
     if (updateErr) {
-      redirect(`/verification?error=${encodeURIComponent(updateErr.message)}`);
+      redirect(`/verification?error=${encodeURIComponent(userFacingError(updateErr))}`);
     }
 
     await supabase.rpc("admin_audit_log", {
@@ -110,7 +111,7 @@ export default async function VerificationPage({
     return (
       <div className="p-6">
         <h1 className="text-lg font-semibold">Verification</h1>
-        <p className="mt-2 text-sm text-red-600">{error.message}</p>
+        <p className="mt-2 text-sm text-red-600">{userFacingError(error)}</p>
       </div>
     );
   }

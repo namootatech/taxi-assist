@@ -53,7 +53,7 @@ export function VerificationQueueClient({
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Verification</h1>
           <p className="mt-1 text-sm muted">
-            Review documents with clear reasons and audit context. Inline preview uses signed URLs.
+            Review documents with clear reasons and audit context. Preview opens in a secure, time-limited window.
           </p>
         </div>
         <div className="text-xs muted">

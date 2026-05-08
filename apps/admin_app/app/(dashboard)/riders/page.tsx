@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { userFacingError } from "@/lib/user-facing-error";
 
 type RiderRow = {
   id: string;
@@ -24,7 +25,7 @@ export default async function RidersPage() {
     return (
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Riders</h1>
-        <p className="mt-2 text-sm text-red-600">{error.message}</p>
+        <p className="mt-2 text-sm text-red-600">{userFacingError(error)}</p>
       </div>
     );
   }

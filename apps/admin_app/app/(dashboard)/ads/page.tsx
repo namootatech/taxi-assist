@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { userFacingError } from "@/lib/user-facing-error";
 import { redirect } from "next/navigation";
 
 type CampaignRow = {
@@ -37,7 +38,7 @@ export default async function AdsPage() {
       status: "ACTIVE",
     });
 
-    if (error) redirect(`/ads?error=${encodeURIComponent(error.message)}`);
+    if (error) redirect(`/ads?error=${encodeURIComponent(userFacingError(error))}`);
     redirect("/ads");
   }
 
@@ -45,7 +46,7 @@ export default async function AdsPage() {
     return (
       <div className="p-6">
         <h1 className="text-lg font-semibold">Ads</h1>
-        <p className="mt-2 text-sm text-red-600">{error.message}</p>
+        <p className="mt-2 text-sm text-red-600">{userFacingError(error)}</p>
       </div>
     );
   }
@@ -60,9 +61,9 @@ export default async function AdsPage() {
       </div>
 
       <div className="rounded-xl border bg-white p-4">
-        <div className="text-sm font-medium">Create campaign (MVP)</div>
+        <div className="text-sm font-medium">Create campaign</div>
         <p className="mt-1 text-xs text-zinc-600">
-          Targeting fields are stored in `target_json` for now.
+          Targeting options are simplified for this MVP.
         </p>
         <form action={create} className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-6">
           <input
@@ -73,7 +74,7 @@ export default async function AdsPage() {
           />
           <input
             name="video_path"
-            placeholder="Supabase Storage path to video"
+            placeholder="Video path in storage (e.g. folder/file.mp4)"
             className="h-9 rounded-md border px-3 text-xs sm:col-span-3"
             required
           />
