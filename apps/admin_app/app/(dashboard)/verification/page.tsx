@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { RealtimeRefresh } from "@/components/realtime/RealtimeRefresh";
+import { VerificationQueueClient } from "./VerificationQueueClient";
 
 type DocRow = {
   document_id: string;
@@ -31,12 +32,29 @@ export default async function VerificationPage({
     .order("created_at", { ascending: true })
     .limit(100);
 
+  function storageBucketForPath(filePath: string) {
+    const parts = filePath.split("/");
+    if (parts.length >= 4 && parts[1] === "vehicle") {
+      const file = parts[3] ?? "";
+      if (
+        file.startsWith("front_") ||
+        file.startsWith("left_") ||
+        file.startsWith("right_") ||
+        file.startsWith("rear_") ||
+        file.startsWith("speedo_")
+      ) {
+        return "vehicle-photos";
+      }
+    }
+    return "driver-documents";
+  }
+
   async function signedUrlFor(doc: DocRow) {
     const filePath = doc.file_path;
     if (!filePath) return null;
 
-    // Current schema uses two buckets and stores relative object paths in file_path.
-    const bucket = doc.entity_type === "VEHICLE" ? "vehicle-photos" : "driver-documents";
+    // Bucket is derived from the stored file path (vehicle photos vs general docs).
+    const bucket = storageBucketForPath(filePath);
     const { data } = await supabase.storage.from(bucket).createSignedUrl(filePath, 60 * 5);
     return data?.signedUrl ?? null;
   }
@@ -101,88 +119,13 @@ export default async function VerificationPage({
   const signedUrls = await Promise.all(rows.map((r) => signedUrlFor(r)));
 
   return (
-    <div className="p-6">
+    <div className="space-y-4">
       <RealtimeRefresh table="documents" />
-      <div className="flex items-baseline justify-between gap-4">
-        <h1 className="text-lg font-semibold">Verification queue</h1>
-        <p className="text-sm text-zinc-600">
-          {effectiveStatus} • {rows.length} items
-        </p>
-      </div>
-
-      <div className="mt-4 overflow-hidden rounded-xl border bg-white">
-        <table className="w-full text-sm">
-          <thead className="border-b bg-zinc-50 text-left">
-            <tr>
-              <th className="px-4 py-3 font-medium">Doc</th>
-              <th className="px-4 py-3 font-medium">Entity</th>
-              <th className="px-4 py-3 font-medium">Created</th>
-              <th className="px-4 py-3 font-medium">Expiry</th>
-              <th className="px-4 py-3 font-medium">Review</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r, idx) => (
-              <tr key={r.document_id} className="border-b last:border-b-0 align-top">
-                <td className="px-4 py-3">
-                  <div className="font-medium">{r.document_type}</div>
-                  <div className="mt-1 font-mono text-xs text-zinc-600">{r.document_id}</div>
-                  {signedUrls[idx] ? (
-                    <a
-                      className="mt-2 inline-block text-xs font-medium text-blue-700 hover:underline"
-                      href={signedUrls[idx] as string}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      View document (signed)
-                    </a>
-                  ) : null}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="font-medium">{r.entity_type}</div>
-                  <div className="mt-1 font-mono text-xs text-zinc-600">{r.entity_id}</div>
-                </td>
-                <td className="px-4 py-3">{new Date(r.created_at).toLocaleString()}</td>
-                <td className="px-4 py-3">{r.expiry_date ?? "—"}</td>
-                <td className="px-4 py-3">
-                  <form action={review} className="space-y-2">
-                    <input type="hidden" name="document_id" value={r.document_id} />
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        name="decision"
-                        value="APPROVED"
-                        className="h-9 rounded-md border bg-white px-3 text-xs font-medium hover:bg-zinc-50"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        name="decision"
-                        value="DECLINED"
-                        className="h-9 rounded-md border bg-white px-3 text-xs font-medium hover:bg-zinc-50"
-                      >
-                        Decline
-                      </button>
-                    </div>
-                    <input
-                      name="reason"
-                      placeholder="Reason (required)"
-                      className="h-9 w-full rounded-md border px-3 text-xs"
-                      required
-                    />
-                  </form>
-                </td>
-              </tr>
-            ))}
-            {rows.length === 0 ? (
-              <tr>
-                <td className="px-4 py-6 text-sm text-zinc-600" colSpan={5}>
-                  No items.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+      <VerificationQueueClient
+        effectiveStatus={effectiveStatus}
+        rows={rows.map((r, idx) => ({ ...r, signedUrl: (signedUrls[idx] as string | null) ?? null }))}
+        reviewAction={review}
+      />
     </div>
   );
 }

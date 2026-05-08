@@ -1,9 +1,9 @@
 ## Trip Admin Platform — Next.js admin app execution plan (build later)
 
 This is a practical build plan for the `/trip-admin/` Next.js 15 admin console that matches:
-- `docs/admin/prd&techstack.md`
-- `docs/admin/business-logic.md`
-- existing schema + future migrations described in `docs/admin/schema-gap-analysis.md`
+- `docs/planning/admin/planning/app-prd.md` (formerly `prd&techstack.md`)
+- `docs/planning/admin/planning/data-model-and-app-entities.md` (formerly `business-logic.md`)
+- existing schema + future migrations described in `docs/planning/schema-gap-analysis.md`
 
 ### 0) Preconditions
 - Supabase schema is extended (not duplicated) via `supabase/migrations/`.

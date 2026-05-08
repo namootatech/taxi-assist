@@ -1,0 +1,67 @@
+---
+alwaysApply: true
+---
+
+# Cursor Project Rules
+
+## Core Directive
+
+**Always prioritize and reference the `docs/` folder as the single source of truth for this project.**
+
+The `docs/` directory contains critical project knowledge including:
+
+- Business logic documents
+- Product Requirements Documents (PRDs)
+- Technical specifications
+- Raw ideas and decision logs
+- Prompts and AI instructions
+- Architecture and flow documents
+- Any other supporting materials
+
+You **must** actively use this information when working on the project.
+
+## Mandatory Behavior
+
+1. **Always Check Docs First**
+   - Before implementing any new feature, significant change, or fixing logic, search and read the relevant files in the `docs/` folder.
+   - Explicitly verify that your planned approach aligns with the documented business logic and requirements.
+
+2. **Verify Logic Consistency**
+   - Cross-reference every major decision against the documents in `docs/`.
+   - If the code you are writing or modifying conflicts with anything in the `docs/` folder, flag the discrepancy immediately and suggest the correct implementation based on the docs.
+
+3. **Utilize Docs for Context**
+   - Use information from the docs to answer questions about "why" something should work a certain way.
+   - Reference specific documents or sections when explaining decisions.
+   - Pull examples, edge cases, and definitions directly from the docs when relevant.
+
+4. **Correct Flow & Prevent Drift**
+   - Act as a guardian against implementation drift. If you notice the codebase deviating from documented logic, proactively propose corrections.
+   - When multiple documents exist, prioritize the most recent or most authoritative one (look for dates, version numbers, or titles like "Final PRD", "Approved Logic", etc.).
+
+## How to Reference Docs
+
+When relevant, mention the source like this:
+
+> According to `docs/business-logic/payment-flow.md`, ...
+
+or
+
+> See section "User Onboarding" in `docs/prd-v2.md`
+
+## Workflow Preferences
+
+- When the user asks you to build or modify something, **first** acknowledge which documents you're referencing.
+- If information is missing or unclear in the docs, explicitly say so and ask for clarification instead of assuming.
+- Keep the codebase aligned with the documented vision at all times.
+- Favor accuracy and fidelity to the docs over speed or assumptions.
+
+## Summary
+
+**The `docs/` folder is part of the project specification.**  
+Treating it as optional is not allowed.  
+You are expected to be deeply familiar with its contents and enforce its guidance consistently.
+
+---
+
+**Rule Priority**: These instructions have the highest priority and override any conflicting general knowledge or default behaviors.

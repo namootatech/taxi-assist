@@ -12,13 +12,14 @@ export default function AdminLandingPage() {
       <header className="sticky top-0 z-10 border-b border-white/10 bg-zinc-950/80 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <div className="grid size-9 place-items-center rounded-xl bg-white/10 text-sm font-semibold">
-              TA
-            </div>
-            <div className="leading-tight">
-              <div className="text-sm font-semibold tracking-tight">Trip Admin</div>
-              <div className="text-xs text-white/60">Operations Console</div>
-            </div>
+            <Image
+              src="/brand/trip-logo.png"
+              alt="Trip"
+              width={156}
+              height={40}
+              priority
+              className="h-auto w-auto max-w-[160px]"
+            />
           </div>
 
           <div className="flex items-center gap-2">
@@ -27,6 +28,12 @@ export default function AdminLandingPage() {
               className="rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-white/90 hover:bg-white/5"
             >
               Sign in
+            </Link>
+            <Link
+              href="/register"
+              className="rounded-lg bg-[var(--brand-red)] px-3 py-2 text-sm font-semibold text-white hover:brightness-95"
+            >
+              Register
             </Link>
           </div>
         </div>
@@ -67,6 +74,12 @@ export default function AdminLandingPage() {
                   className="rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-zinc-100"
                 >
                   Open admin console
+                </Link>
+                <Link
+                  href="/register"
+                  className="rounded-xl bg-[var(--brand-red)] px-4 py-2.5 text-sm font-semibold text-white hover:brightness-95"
+                >
+                  Create admin account
                 </Link>
                 <Link
                   href="/login?error=not_admin"

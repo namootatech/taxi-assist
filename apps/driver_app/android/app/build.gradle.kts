@@ -7,9 +7,8 @@ plugins {
 android {
     namespace = "co.taxassist.driver"
     compileSdk = 35
-    // Use Flutter/toolchain default NDK — pinning NDK 27 broke `stripDebugDebugSymbols` on some
-    // hosts (e.g. Apple Silicon resolving to darwin-x86_64 llvm-strip).
-    ndkVersion = flutter.ndkVersion
+    // Required by Android plugins (NDK versions are backward compatible).
+    ndkVersion = "27.1.12297006"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -29,6 +28,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Work around NDK toolchain host mismatches on some machines by skipping
+            // symbol stripping for debug builds.
+            ndk {
+                debugSymbolLevel = "none"
+            }
+        }
         release {
             signingConfig = signingConfigs.getByName("debug")
         }

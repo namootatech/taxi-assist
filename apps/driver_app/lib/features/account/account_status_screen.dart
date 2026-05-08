@@ -20,7 +20,7 @@ class AccountStatusScreen extends ConsumerWidget {
 
   String get _body => switch (profile.status) {
         DriverProfileStatus.rejected =>
-          'Your driver application was not approved. Contact Taxi Assist support for next steps.',
+          'Your driver application was not approved. Review the reason below and contact Taxi Assist support if you need help.',
         DriverProfileStatus.suspended =>
           'Your account is suspended. You cannot drive until this is resolved. Contact support.',
         DriverProfileStatus.deactivated =>
@@ -30,6 +30,7 @@ class AccountStatusScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final reason = profile.rejectionReason?.trim();
     return Scaffold(
       appBar: AppBar(title: Text(_title)),
       body: Padding(
@@ -38,6 +39,22 @@ class AccountStatusScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(_body, style: Theme.of(context).textTheme.bodyLarge),
+            if (profile.status == DriverProfileStatus.rejected &&
+                reason != null &&
+                reason.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Reason: $reason',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
             FilledButton(
               onPressed: () async {

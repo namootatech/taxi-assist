@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import Image from "next/image";
 
 export default async function LoginPage({
   searchParams,
@@ -12,7 +13,7 @@ export default async function LoginPage({
   } = await supabase.auth.getUser();
 
   if (user) {
-    redirect("/");
+    redirect("/dashboard");
   }
 
   const { next, error } = await searchParams;
@@ -31,10 +32,23 @@ export default async function LoginPage({
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-zinc-50 px-4 py-12">
-      <div className="w-full max-w-sm rounded-2xl border bg-white p-6 shadow-sm">
-        <h1 className="text-xl font-semibold tracking-tight">Trip Admin</h1>
-        <p className="mt-1 text-sm text-zinc-600">Sign in with your admin account.</p>
+    <div className="flex flex-1 items-center justify-center surface-2 px-4 py-12">
+      <div className="w-full max-w-sm rounded-2xl border border-token surface-1 p-6 shadow-[var(--shadow)]">
+        <div className="flex items-center gap-3">
+          <Image
+            src="/brand/trip-icon.png"
+            alt="Trip"
+            width={36}
+            height={36}
+            className="rounded-lg"
+          />
+          <div>
+            <div className="text-xs font-medium muted">Trip</div>
+            <h1 className="text-lg font-semibold tracking-tight">Admin Console</h1>
+          </div>
+        </div>
+
+        <p className="mt-3 text-sm muted">Sign in with your admin account.</p>
         <p className="mt-2 text-xs text-zinc-500">
           New here?{" "}
           <a className="underline underline-offset-4" href="/landing">
@@ -58,7 +72,7 @@ export default async function LoginPage({
               name="email"
               type="email"
               required
-              className="h-10 w-full rounded-md border px-3 text-sm"
+              className="h-10 w-full rounded-md border border-token bg-transparent px-3 text-sm"
               autoComplete="email"
             />
           </label>
@@ -69,14 +83,14 @@ export default async function LoginPage({
               name="password"
               type="password"
               required
-              className="h-10 w-full rounded-md border px-3 text-sm"
+              className="h-10 w-full rounded-md border border-token bg-transparent px-3 text-sm"
               autoComplete="current-password"
             />
           </label>
 
           <button
             type="submit"
-            className="h-10 w-full rounded-md bg-black text-sm font-medium text-white"
+            className="h-10 w-full rounded-md bg-[var(--brand-red)] text-sm font-semibold text-white hover:brightness-95"
           >
             Sign in
           </button>

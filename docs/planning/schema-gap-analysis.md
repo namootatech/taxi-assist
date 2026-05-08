@@ -1,10 +1,35 @@
-## Trip Admin Platform — schema gap analysis (plan)
+# Platform schema & planning gap analysis
 
-This document summarizes what is **already implemented** in `supabase/migrations/` and what is **still missing** to satisfy:
-- `docs/admin/prd&techstack.md`
-- `docs/admin/business-logic.md`
+**APD-Resume (2026-05-07):** This file is the **canonical** gap register. Legacy paths `docs/admin/*` referenced below now live under `docs/planning/admin/planning/` and `docs/planning/admin/prompts/`.
+
+## Normalization gaps (documentation only)
+
+| Gap | Severity | Notes |
+|-----|----------|--------|
+| **Rider app** | Medium | **Planning done** (`docs/planning/rider_app/`). Remaining: `apps/rider_app` scaffold, rider trip request RPCs/RLS, wallet/ad tables as in appendix below. |
+| **APD six-pack per app** | Medium | `admin` and `drivers` each still need `user-roles-and-permissions.md`, `user-flows-and-ux-logic.md`, and `ui-design-system.md` (stubs created in this pass—expand from `app-prd.md`). |
+| **Driver prompts → APD 5-phase** | Low | Eight sequential prompts retained; see `drivers/prompts/INDEX.md` for mapping to foundation → deploy. |
+| **Platform PRD split** | Medium | Single `master-prd.md` / vision docs synthesized; reconcile with `supporting-documents/prd-overview.md` on next edit pass. |
+| **Rules vs filenames** | Low | Global `apd-rules.mdc` may reference `01-product-vision.md`; this repo uses **kebab-case** platform names—recorded in `docs/system/project-summary.md`. |
+
+### Rider app — implementation gaps (planning)
+
+- **`apps/rider_app`** not in monorepo yet.
+- **Trip request from rider:** RPC or insert path for `trips` as rider-owned action; RLS today may be driver-centric — confirm before rider prompt 03.
+- **`trip_locations`:** rider-initiated location updates need policy design.
+- **Wallets / `ad_views`:** still per appendix below.
+
+---
+
+## Admin / Supabase schema gap (migrated content)
+
+This section summarizes what is **already implemented** in `supabase/migrations/` and what is **still missing** to satisfy:
+
+- `docs/planning/admin/planning/app-prd.md` (formerly `prd&techstack.md`)
+- `docs/planning/admin/planning/data-model-and-app-entities.md` (formerly `business-logic.md`)
 
 ### Existing tables/behaviors already present
+
 - **Profiles (driver-focused)**: `public.profiles`
   - RLS: driver can select/insert/update own profile.
   - Fields include `status`, `online_status`, `current_vehicle_id`, training flags.
@@ -32,7 +57,9 @@ This document summarizes what is **already implemented** in `supabase/migrations
 ### Gaps to build the Admin Platform (migrations to add)
 
 #### 1) Admin identity + RBAC (required)
+
 Add tables and policies so that an authenticated **admin user** can read/write admin-only data under RLS.
+
 - `public.admin_profiles`:
   - `user_id uuid primary key references auth.users(id)`
   - `role text not null` (enum-like check constraint)
@@ -40,12 +67,16 @@ Add tables and policies so that an authenticated **admin user** can read/write a
 - Optional `public.admin_role_permissions` (if capability matrix needs to be data-driven)
 
 RLS requirements:
+
 - Only admins can `select` from `admin_profiles`.
 - Allow `superadmin` to manage admin profiles; other roles read-only or none.
 
 #### 2) Admin-facing RLS policies on existing tables
+
 Today, many tables are “driver owns row” policies. Admin app requires **read access** and **mutation access** (approve/reject, suspend, etc.) under RLS.
+
 Approach:
+
 - Create `public.is_admin()` helper (security definer) that checks `admin_profiles` for `auth.uid()`.
 - Create `public.admin_role()` helper for role-based policies.
 - Add `select` policies on:
@@ -58,7 +89,9 @@ Approach:
   - `payouts`: status transitions + references
 
 #### 3) Audit logging (required)
+
 Add `public.audit_logs` (append-only) with a consistent schema:
+
 - `audit_id bigserial primary key`
 - `actor_admin_user_id uuid` (auth.users id)
 - `actor_role text`
@@ -69,51 +102,68 @@ Add `public.audit_logs` (append-only) with a consistent schema:
 - `created_at timestamptz default now()`
 
 Implementation:
+
 - Prefer trigger helpers like `public.audit_log_insert(...)` called from RPCs or from controlled UPDATE triggers.
 - For high-risk mutations, prefer **RPCs** that both mutate and audit in one transaction.
 
 #### 4) Wallets + ledger (required by PRD/business logic)
+
 Missing tables:
+
 - `public.wallets` (one per profile per wallet type)
 - `public.wallet_transactions` (append-only ledger)
 
 Constraints:
+
 - Non-negative balance invariant enforced via:
   - computed balance from ledger, or
   - balance column + trigger that blocks negative results.
 
 Admin actions:
+
 - Manual adjustment RPC requiring reason + optional second-factor approvals later.
 
 #### 5) Ads (Taxi Assist Media) (required by PRD/business logic)
+
 Missing tables:
+
 - `public.ad_campaigns`
 - `public.ad_views`
 
 Key rule:
+
 - Reward credit only after **full watch + rating + comment** → model as `ad_views.state` with required fields, and only then allow wallet credit transaction.
 
 #### 6) Trip events / admin interventions (required)
+
 Add `public.trip_events` (append-only event stream) capturing:
+
 - status transitions, cancels, fare adjustments, dispute events
 - actor info (driver vs admin)
 
 #### 7) Document expiry automation + side effects
+
 Current migrations include an index; they do **not** implement the automated transition.
+
 Add either:
+
 - a `pg_cron` job (preferred for “daily sweep”), or
 - an `on update/insert` trigger that sets `EXPIRED` when `expiry_date < today` (still needs periodic enforcement).
 
 Side effects:
+
 - if critical docs expire → prevent go-online (already checked) and optionally force offline.
 
 #### 8) Storage hardening for POPIA
+
 Buckets are currently `public=true`. For admin platform + POPIA, plan to:
+
 - make buckets private
 - use signed URLs for document viewing
 - keep RLS on `storage.objects` aligned to admin access
 
 ### Suggested migration ordering (when you build later)
+
 1. `admin_profiles` + admin helper functions (`is_admin`, `admin_role`)
 2. Admin RLS `select` policies on existing tables
 3. `audit_logs` + audit helper functions/RPC pattern
@@ -123,4 +173,3 @@ Buckets are currently `public=true`. For admin platform + POPIA, plan to:
 7. `trip_events`
 8. Document expiry automation
 9. Storage bucket privacy + signed URL strategy
-

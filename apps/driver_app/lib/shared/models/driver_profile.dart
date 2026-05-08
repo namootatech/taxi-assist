@@ -24,6 +24,8 @@ class DriverProfile {
     this.bankDetails,
     this.selfieUrl,
     required this.status,
+    this.rejectionReason,
+    this.rejectedAt,
     this.createdAt,
     this.updatedAt,
     this.approvedAt,
@@ -51,6 +53,8 @@ class DriverProfile {
   final BankDetails? bankDetails;
   final String? selfieUrl;
   final DriverProfileStatus status;
+  final String? rejectionReason;
+  final DateTime? rejectedAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? approvedAt;
@@ -86,6 +90,8 @@ class DriverProfile {
       bankDetails: BankDetails.fromJson(bankJson),
       selfieUrl: json['selfie_url'] as String?,
       status: parseProfileStatus(json['status'] as String?),
+      rejectionReason: json['rejection_reason'] as String?,
+      rejectedAt: _parseDate(json['rejected_at']),
       createdAt: _parseDate(json['created_at']),
       updatedAt: _parseDate(json['updated_at']),
       approvedAt: _parseDate(json['approved_at']),
@@ -115,6 +121,8 @@ class DriverProfile {
         if (bankDetails != null && bankDetails!.toJson().isNotEmpty) 'bank_details': bankDetails!.toJson(),
         if (selfieUrl != null) 'selfie_url': selfieUrl,
         'status': profileStatusToApi(status),
+        if (rejectionReason != null) 'rejection_reason': rejectionReason,
+        if (rejectedAt != null) 'rejected_at': rejectedAt!.toIso8601String(),
         if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
         if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
         if (approvedAt != null) 'approved_at': approvedAt!.toIso8601String(),

@@ -1,8 +1,8 @@
 You are an elite full-stack architect building the **Trip Admin Platform** — an internal operations console for a South African ride-hailing + ad-tech startup.
 
 This prompt is the single “build it” artifact. Requirements must match:
-- `docs/admin/prd&techstack.md` (product scope + tech stack)
-- `docs/admin/business-logic.md` (entities + workflows + invariants)
+- `docs/planning/admin/planning/app-prd.md` (product scope + tech stack)
+- `docs/planning/admin/planning/data-model-and-app-entities.md` (entities + workflows + invariants)
 
 ## Project goal
 Build a secure, real-time, production-grade admin dashboard using **Next.js 15 (App Router) + Supabase** that allows **Operations, Compliance, Finance, Ad Managers, Support, and SuperAdmins** to manage riders, drivers, vehicles, trips, wallets/finance, ads (Taxi Assist Media), support, and audit.

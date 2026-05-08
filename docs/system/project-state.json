@@ -1,0 +1,29 @@
+{
+  "phase": "implementation-ready",
+  "lastUpdated": "2026-05-08",
+  "completed": [
+    "apd-resume-normalization-2026-05-07",
+    "supporting-documents-folder-rename",
+    "admin-planning-folder-layout",
+    "drivers-planning-folder-layout",
+    "platform-six-pack-synthesized",
+    "schema-gap-analysis-canonical",
+    "seed-data-moved-to-system",
+    "rider-app-apd-six-pack-and-prompts-2026-05-08",
+    "adr-002-rider-app-docs"
+  ],
+  "pending": [
+    "apps-rider-app-scaffold",
+    "expand-admin-user-flows-ui-stubs",
+    "expand-driver-user-flows-ui-stubs",
+    "reconcile-prompts-to-five-apd-phases-optional",
+    "align-global-apd-rules-numbered-vs-kebab-filenames",
+    "rider-trip-request-rls-and-rpc-migrations"
+  ],
+  "apps": {
+    "driver_app": "in-progress",
+    "admin_app": "planning",
+    "rider_app": "planning"
+  },
+  "notes": "rider_app: full docs under docs/planning/rider_app/; no apps/rider_app yet. See docs/planning/adrs/002-rider-app-docs-and-stack.md."
+}

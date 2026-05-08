@@ -28,14 +28,23 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith("/login");
-  const isPublicRoute = request.nextUrl.pathname === "/landing";
+  const pathname = request.nextUrl.pathname;
+  const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/register");
   const isPublicAsset =
-    request.nextUrl.pathname.startsWith("/_next") ||
-    request.nextUrl.pathname.startsWith("/favicon") ||
-    request.nextUrl.pathname.startsWith("/icons");
+    pathname.startsWith("/_next") || pathname.startsWith("/favicon") || pathname.startsWith("/icons");
 
-  if (!user && !isAuthRoute && !isPublicRoute && !isPublicAsset) {
+  const isProtectedRoute =
+    pathname === "/dashboard" ||
+    pathname.startsWith("/drivers") ||
+    pathname.startsWith("/vehicles") ||
+    pathname.startsWith("/verification") ||
+    pathname.startsWith("/trips") ||
+    pathname.startsWith("/wallets") ||
+    pathname.startsWith("/ads") ||
+    pathname.startsWith("/support") ||
+    pathname.startsWith("/audit");
+
+  if (!user && isProtectedRoute && !isPublicAsset) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", request.nextUrl.pathname);
@@ -44,12 +53,12 @@ export async function middleware(request: NextRequest) {
 
   if (user && isAuthRoute) {
     const dest = request.nextUrl.clone();
-    dest.pathname = "/";
+    dest.pathname = "/dashboard";
     dest.search = "";
     return NextResponse.redirect(dest);
   }
 
-  if (user && !isAuthRoute && !isPublicRoute && !isPublicAsset) {
+  if (user && isProtectedRoute && !isPublicAsset) {
     const { data: adminProfile, error } = await supabase
       .from("admin_profiles")
       .select("role, disabled_at")

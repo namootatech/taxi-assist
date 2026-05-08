@@ -1,11 +1,6 @@
-import DashboardLayout from "./(dashboard)/layout";
-import DashboardHome from "./(dashboard)/DashboardHome";
+import AdminLandingPage from "./landing/page";
 
 export default async function RootPage() {
-  return (
-    <DashboardLayout>
-      <DashboardHome />
-    </DashboardLayout>
-  );
+  return <AdminLandingPage />;
 }
 

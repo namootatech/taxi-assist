@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { RealtimeRefresh } from "@/components/realtime/RealtimeRefresh";
-import dynamic from "next/dynamic";
+import { TripsLiveMapSection } from "@/components/maps/TripsLiveMapSection";
+import Link from "next/link";
 
 type TripRow = {
   trip_id: string;
@@ -23,10 +24,7 @@ type LocationRow = {
   recorded_at: string;
 };
 
-const TripsLiveMap = dynamic(
-  () => import("@/components/maps/TripsLiveMap").then((m) => m.TripsLiveMap),
-  { ssr: false },
-);
+type ProfileMini = { id: string; full_name: string | null; cellphone: string | null };
 
 export default async function TripsPage({
   searchParams,
@@ -50,14 +48,24 @@ export default async function TripsPage({
 
   if (error) {
     return (
-      <div className="p-6">
-        <h1 className="text-lg font-semibold">Trips</h1>
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">Trips</h1>
         <p className="mt-2 text-sm text-red-600">{error.message}</p>
       </div>
     );
   }
 
   const rows = (data ?? []) as TripRow[];
+  const profileIds = Array.from(
+    new Set(rows.flatMap((r) => [r.driver_id, r.rider_id].filter(Boolean) as string[])),
+  );
+  const { data: profileData } =
+    profileIds.length > 0
+      ? await supabase.from("profiles").select("id, full_name, cellphone").in("id", profileIds)
+      : { data: [] as ProfileMini[] };
+  const profiles = new Map<string, ProfileMini>();
+  for (const p of (profileData ?? []) as ProfileMini[]) profiles.set(p.id, p);
+
   const active = rows.filter((r) =>
     ["REQUESTED", "ACCEPTED", "EN_ROUTE_PICKUP", "ARRIVED_PICKUP", "IN_PROGRESS"].includes(
       r.status,
@@ -85,45 +93,55 @@ export default async function TripsPage({
   }));
 
   return (
-    <div className="p-6">
+    <div className="space-y-4">
       <RealtimeRefresh table="trips" />
       <RealtimeRefresh table="trip_locations" />
-      <div className="flex items-baseline justify-between gap-4">
-        <h1 className="text-lg font-semibold">Trips</h1>
-        <p className="text-sm text-zinc-600">
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">Trips</h1>
+          <p className="mt-1 text-sm muted">
+            Monitor live trips, investigate incidents, and drill into timelines—without raw IDs as primary UI.
+          </p>
+        </div>
+        <p className="text-xs muted">
           Showing latest {rows.length} • Active {active.length}
         </p>
       </div>
 
-      <div className="mt-4">
-        <TripsLiveMap points={points} />
+      <div>
+        <TripsLiveMapSection points={points} />
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-xl border bg-white">
+      <div className="overflow-hidden rounded-2xl border border-token surface-1 shadow-[var(--shadow)]">
         <table className="w-full text-sm">
-          <thead className="border-b bg-zinc-50 text-left">
+          <thead className="border-b border-token bg-[var(--surface-1)] text-left">
             <tr>
-              <th className="px-4 py-3 font-medium">Trip</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Driver</th>
-              <th className="px-4 py-3 font-medium">Rider</th>
-              <th className="px-4 py-3 font-medium">Payment</th>
-              <th className="px-4 py-3 font-medium">Fare</th>
-              <th className="px-4 py-3 font-medium">Created</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide muted">Trip</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide muted">Status</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide muted">Driver</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide muted">Rider</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide muted">Payment</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide muted">Fare</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide muted">Created</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.trip_id} className="border-b last:border-b-0">
+              <tr key={r.trip_id} className="border-b border-token hover:bg-black/3 last:border-b-0">
                 <td className="px-4 py-3">
-                  <div className="font-mono text-xs">{r.trip_id}</div>
+                  <Link className="font-semibold hover:underline" href={`/trips/${r.trip_id}`}>
+                    View trip
+                  </Link>
+                  <div className="text-xs muted">ID ending {r.trip_id.slice(-6)}</div>
                 </td>
                 <td className="px-4 py-3">{r.status}</td>
                 <td className="px-4 py-3">
-                  <span className="font-mono text-xs">{r.driver_id}</span>
+                  {profiles.get(r.driver_id)?.full_name ?? "Unnamed driver"}
+                  <div className="text-xs muted">{profiles.get(r.driver_id)?.cellphone ?? "—"}</div>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="font-mono text-xs">{r.rider_id ?? "—"}</span>
+                  {r.rider_id ? (profiles.get(r.rider_id)?.full_name ?? "Unnamed rider") : "—"}
+                  <div className="text-xs muted">{r.rider_id ? profiles.get(r.rider_id)?.cellphone ?? "—" : ""}</div>
                 </td>
                 <td className="px-4 py-3">{r.payment_method ?? "—"}</td>
                 <td className="px-4 py-3">
@@ -134,7 +152,7 @@ export default async function TripsPage({
             ))}
             {rows.length === 0 ? (
               <tr>
-                <td className="px-4 py-6 text-sm text-zinc-600" colSpan={7}>
+                <td className="px-4 py-10 text-sm muted" colSpan={7}>
                   No trips found.
                 </td>
               </tr>
