@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_spacing.dart';
+import '../../core/utils/safe_text.dart';
 import '../../core/supabase_client.dart';
 import '../../shared/models/driver_enums.dart';
 import '../../shared/models/driver_profile.dart';
@@ -89,7 +90,15 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
       data: (profile) {
         if (profile == null) {
           return const Scaffold(
-            body: Center(child: Text('No profile')),
+            body: Center(
+              child: Padding(
+                padding: AppSpacing.screenPadding,
+                child: Text(
+                  'We couldn\'t load your driver profile. Pull to refresh or sign in again.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
           );
         }
 
@@ -147,7 +156,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                     final m = d.inMinutes.remainder(60);
                     final s = d.inSeconds.remainder(60);
                     return Text(
-                      'Available this session: ${h}h ${m}m ${s}s (soft MVP)',
+                      'Available this session: ${h}h ${m}m ${s}s',
                       style: TextStyle(color: scheme.onSurfaceVariant),
                     );
                   },
@@ -176,7 +185,7 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                     );
                   },
                   loading: () => const LinearProgressIndicator(),
-                  error: (e, _) => Text('$e'),
+                  error: (e, _) => Text(userFacingError(e)),
                 ),
                 const SizedBox(height: 24),
                 if (blockers.isNotEmpty) ...[
@@ -270,7 +279,12 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        body: Center(child: Text('$e')),
+        body: Center(
+          child: Padding(
+            padding: AppSpacing.screenPadding,
+            child: Text(userFacingError(e), textAlign: TextAlign.center),
+          ),
+        ),
       ),
     );
   }

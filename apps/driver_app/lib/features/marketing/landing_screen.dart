@@ -14,8 +14,6 @@ class LandingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
     return Scaffold(
       body: Stack(
         children: [
@@ -158,13 +156,6 @@ class LandingScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Text(
-                        'Background image via Unsplash',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: scheme.onSurface.withOpacity(0.65),
-                        ),
-                      ),
                     ],
                   ),
                 ],

@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_spacing.dart';
 import '../../core/supabase_client.dart';
+import '../../core/utils/safe_text.dart';
 import '../../shared/models/document_item.dart';
 import '../../shared/providers/app_providers.dart';
 import '../../shared/services/supabase_service.dart';
@@ -110,19 +111,21 @@ class _WaitingApprovalScreenState extends ConsumerState<WaitingApprovalScreen> {
           padding: AppSpacing.screenPadding,
           children: [
             Text(
-              'Your registration was submitted. Back-office will review your '
-              'profile and documents. Status updates appear below in real time.',
+              'Your registration was submitted. We\'re reviewing your profile and '
+              'documents — updates appear below as we go.',
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 16),
             if (_loading) const Center(child: CircularProgressIndicator()),
             if (_error != null)
               Text(
-                _error!,
+                userFacingError(_error),
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             if (!_loading && _docs.isEmpty && _error == null)
-              const Text('No document rows yet. Complete uploads in the wizard.'),
+              const Text(
+                'No documents uploaded yet — finish your documents in onboarding.',
+              ),
             ..._docs.map(
               (d) => Card(
                 margin: const EdgeInsets.only(bottom: 8),

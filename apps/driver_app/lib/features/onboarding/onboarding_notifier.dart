@@ -1,7 +1,9 @@
+import 'dart:developer' show log;
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/utils/safe_text.dart';
 import '../../core/utils/toast.dart';
 import '../../shared/models/document_types.dart';
 import '../../shared/models/driver_profile.dart';
@@ -13,20 +15,53 @@ import 'onboarding_state.dart';
 
 final onboardingNotifierProvider = StateNotifierProvider.autoDispose
     .family<OnboardingNotifier, OnboardingState, String>((ref, profileId) {
+  // IMPORTANT: returning from Android pickers can cause auth/profile providers
+  // to briefly rebuild/loading. We must not throw here, otherwise the onboarding
+  // route rebuilds and the driver loses progress.
+  final notifier = OnboardingNotifier(ref, profileId);
   final profile = ref.read(currentDriverProvider).valueOrNull;
-  if (profile == null || profile.id != profileId) {
-    throw ArgumentError('Onboarding requires profile id $profileId');
+  if (profile != null && profile.id == profileId) {
+    notifier.hydrateFromProfile(profile);
   }
-  return OnboardingNotifier(ref, profile);
+  return notifier;
 });
 
 class OnboardingNotifier extends StateNotifier<OnboardingState> {
-  OnboardingNotifier(this._ref, DriverProfile profile)
-      : _profileId = profile.id,
-        super(OnboardingState.fromProfile(profile));
+  OnboardingNotifier(this._ref, this._profileId) : super(const OnboardingState());
 
   final Ref _ref;
   final String _profileId;
+  var _didHydrate = false;
+
+  bool get _isPristine =>
+      state.fullName.trim().isEmpty &&
+      state.idNumber.trim().isEmpty &&
+      state.dob == null &&
+      state.sex.trim().isEmpty &&
+      state.residentialAddress.trim().isEmpty &&
+      state.licenseNumber.trim().isEmpty &&
+      state.licenseCode.trim().isEmpty &&
+      state.pdpNumber.trim().isEmpty &&
+      state.pdpExpiry == null &&
+      state.bankAccountHolder.trim().isEmpty &&
+      state.bankName.trim().isEmpty &&
+      state.bankAccountNumber.trim().isEmpty &&
+      state.bankBranchCode.trim().isEmpty &&
+      state.selfiePath == null &&
+      state.idDocPath == null &&
+      state.licenseDocPath == null &&
+      state.proofResidencePath == null &&
+      state.bankStatementPath == null &&
+      state.stepIndex == 0;
+
+  void hydrateFromProfile(DriverProfile profile) {
+    if (_didHydrate) return;
+    if (profile.id != _profileId) return;
+    // Only hydrate if the user hasn't started filling anything in.
+    if (!_isPristine) return;
+    _didHydrate = true;
+    state = OnboardingState.fromProfile(profile);
+  }
 
   SupabaseService get _svc => _ref.read(supabaseServiceProvider);
   DocumentUploadService get _upload => _ref.read(documentUploadServiceProvider);
@@ -112,13 +147,22 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     required String localPath,
     required String docType,
   }) async {
+    log(
+      'uploadDriverDoc start docType=$docType uid=$uid profileId=$_profileId localPath=$localPath',
+      name: 'OnboardingUpload',
+    );
     final bytes = await File(localPath).readAsBytes();
+    log('uploadDriverDoc read bytes=${bytes.length}', name: 'OnboardingUpload');
     final storagePath = DocumentUploadService.driverDocumentPath(
       authUid: uid,
       documentType: docType,
       filePath: localPath,
     );
     final ct = DocumentUploadService.contentTypeForPath(localPath);
+    log(
+      'uploadDriverDoc resolved bucket=${SupabaseService.bucketDriverDocuments} storagePath=$storagePath contentType=$ct',
+      name: 'OnboardingUpload',
+    );
     await _upload.uploadAndRecord(
       bucket: SupabaseService.bucketDriverDocuments,
       storagePath: storagePath,
@@ -128,6 +172,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       entityId: _profileId,
       documentType: docType,
     );
+    log('uploadDriverDoc done storagePath=$storagePath', name: 'OnboardingUpload');
     return storagePath;
   }
 
@@ -140,7 +185,13 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     DateTime? expiry,
     required bool useVehiclePhotoBucket,
   }) async {
+    log(
+      'uploadVehicleFile start docType=$documentType uid=$uid vehicleId=$vehicleId slot=$slot localPath=$localPath '
+      'useVehiclePhotoBucket=$useVehiclePhotoBucket expiry=$expiry',
+      name: 'OnboardingUpload',
+    );
     final bytes = await File(localPath).readAsBytes();
+    log('uploadVehicleFile read bytes=${bytes.length}', name: 'OnboardingUpload');
     final storagePath = useVehiclePhotoBucket
         ? DocumentUploadService.vehicleAssetPath(
             authUid: uid,
@@ -157,6 +208,10 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     final bucket = useVehiclePhotoBucket
         ? SupabaseService.bucketVehiclePhotos
         : SupabaseService.bucketDriverDocuments;
+    log(
+      'uploadVehicleFile resolved bucket=$bucket storagePath=$storagePath contentType=$ct',
+      name: 'OnboardingUpload',
+    );
     await _upload.uploadAndRecord(
       bucket: bucket,
       storagePath: storagePath,
@@ -167,6 +222,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       documentType: documentType,
       expiryDate: expiry,
     );
+    log('uploadVehicleFile done storagePath=$storagePath', name: 'OnboardingUpload');
     return storagePath;
   }
 
@@ -181,6 +237,11 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     try {
       final uid = _svc.auth.currentUser?.id;
       if (uid == null) throw StateError('Not signed in');
+      log(
+        'completeStep1 start uid=$uid profileId=$_profileId selfiePath=${state.selfiePath} idDocPath=${state.idDocPath} '
+        'licenseDocPath=${state.licenseDocPath} proofResidencePath=${state.proofResidencePath} bankStatementPath=${state.bankStatementPath}',
+        name: 'OnboardingUpload',
+      );
 
       final selfieStorage = await _uploadDriverDoc(
         uid: uid,
@@ -238,9 +299,11 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       await _svc.updateProfile(patch);
       state = state.copyWith(stepIndex: 1, isBusy: false);
       showAppToast('Step 1 saved');
-    } catch (e) {
+      log('completeStep1 done', name: 'OnboardingUpload');
+    } catch (e, st) {
+      log('OnboardingNotifier.completeStep1 failed', name: 'OnboardingNotifier', error: e, stackTrace: st);
       state = state.copyWith(isBusy: false, errorMessage: '$e');
-      showAppToast('Could not complete step 1: $e', long: true);
+      showAppToast('Could not save step 1. ${userFacingError(e)}', long: true);
     }
   }
 
@@ -357,9 +420,10 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         vehicleId: vehicleId,
       );
       showAppToast('Step 2 saved');
-    } catch (e) {
+    } catch (e, st) {
+      log('OnboardingNotifier.completeStep2 failed', name: 'OnboardingNotifier', error: e, stackTrace: st);
       state = state.copyWith(isBusy: false, errorMessage: '$e');
-      showAppToast('Could not complete step 2: $e', long: true);
+      showAppToast('Could not save step 2. ${userFacingError(e)}', long: true);
     }
   }
 
@@ -373,9 +437,10 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       await _ref.read(currentDriverProvider.notifier).refresh();
       state = state.copyWith(isBusy: false);
       showAppToast('Registration submitted — awaiting review');
-    } catch (e) {
+    } catch (e, st) {
+      log('OnboardingNotifier.submitRegistration failed', name: 'OnboardingNotifier', error: e, stackTrace: st);
       state = state.copyWith(isBusy: false, errorMessage: '$e');
-      showAppToast('Submit failed: $e', long: true);
+      showAppToast('Submit failed. ${userFacingError(e)}', long: true);
     }
   }
 }

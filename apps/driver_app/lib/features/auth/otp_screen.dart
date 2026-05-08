@@ -42,8 +42,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           );
       await ref.read(currentDriverProvider.notifier).refresh();
       showAppToast(
-        'Account created. If email confirmation is enabled in Supabase, '
-        'confirm your email before signing in.',
+        'Account created. Confirm your email if you\'re asked — then sign in.',
         long: true,
       );
       if (mounted) {

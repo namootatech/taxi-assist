@@ -1,3 +1,4 @@
+import 'dart:developer' show log;
 import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -66,11 +67,22 @@ class DocumentUploadService {
     required Uint8List bytes,
     required String contentType,
   }) async {
-    await _supabase.client.storage.from(bucket).uploadBinary(
-          storagePath,
-          bytes,
-          fileOptions: FileOptions(contentType: contentType, upsert: true),
-        );
+    try {
+      await _supabase.client.storage.from(bucket).uploadBinary(
+            storagePath,
+            bytes,
+            fileOptions: FileOptions(contentType: contentType, upsert: true),
+          );
+    } catch (e, st) {
+      log(
+        'storage.uploadBinary failed bucket=$bucket path=$storagePath '
+        'contentType=$contentType bytes=${bytes.length}: $e',
+        name: 'DocumentUploadService',
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
+    }
   }
 
   String publicUrlForPath(String bucket, String storagePath) {
@@ -98,7 +110,18 @@ class DocumentUploadService {
         'expiry_date': expiryDate.toIso8601String().split('T').first,
     };
 
-    await _supabase.client.from(SupabaseService.documentsTable).insert(row);
+    try {
+      await _supabase.client.from(SupabaseService.documentsTable).insert(row);
+    } catch (e, st) {
+      log(
+        'documents.insert failed entityType=$entityType entityId=$entityId '
+        'documentType=$documentType: $e',
+        name: 'DocumentUploadService',
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
+    }
   }
 
   Future<void> uploadAndRecord({

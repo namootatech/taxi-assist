@@ -51,8 +51,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'We will email you a link to choose a new password. Configure '
-                  'SMTP on your Supabase project for delivery.',
+                  'We\'ll email you a link to choose a new password. Check your inbox '
+                  '(and spam) — it may take a minute.',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 16),

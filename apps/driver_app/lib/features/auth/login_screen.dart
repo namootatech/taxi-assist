@@ -38,7 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           );
       await ref.read(currentDriverProvider.notifier).refresh();
     } catch (e) {
-      showAppToast(safeMessage(e), long: true);
+      showAppToast(userFacingError(e), long: true);
     } finally {
       if (mounted) setState(() => _loading = false);
     }

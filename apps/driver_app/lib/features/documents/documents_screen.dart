@@ -1,3 +1,4 @@
+import 'dart:developer' show log;
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -6,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/constants/app_spacing.dart';
+import '../../core/utils/picked_file_path.dart';
+import '../../core/utils/safe_text.dart';
 import '../../core/utils/toast.dart';
 import '../../shared/models/document_item.dart';
 import '../../shared/models/document_types.dart';
@@ -60,7 +63,15 @@ class DocumentsScreen extends ConsumerWidget {
       body: profileAsync.when(
         data: (profile) {
           if (profile == null) {
-            return const Center(child: Text('No profile'));
+            return const Center(
+              child: Padding(
+                padding: AppSpacing.screenPadding,
+                child: Text(
+                  'We couldn\'t load your driver profile. Pull to refresh or sign in again.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
           }
           return docsAsync.when(
             data: (docs) => _DocumentsBody(
@@ -77,7 +88,7 @@ class DocumentsScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('$e', textAlign: TextAlign.center),
+                    Text(userFacingError(e), textAlign: TextAlign.center),
                     const SizedBox(height: 16),
                     FilledButton(
                       onPressed: () => ref.invalidate(driverDocumentsProvider),
@@ -90,7 +101,12 @@ class DocumentsScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
+        error: (e, _) => Center(
+          child: Padding(
+            padding: AppSpacing.screenPadding,
+            child: Text(userFacingError(e), textAlign: TextAlign.center),
+          ),
+        ),
       ),
     );
   }
@@ -220,9 +236,19 @@ class _DocumentCard extends ConsumerWidget {
   final DateFormat dateFmt;
 
   Future<void> _reupload(BuildContext context, WidgetRef ref) async {
-    final pick = await FilePicker.platform.pickFiles(type: FileType.any);
-    final path = pick?.files.single.path;
-    if (path == null || !context.mounted) return;
+    final pick = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+      withData: true,
+    );
+    if (pick == null || pick.files.isEmpty || !context.mounted) return;
+    final path = await materializePickedFile(pick.files.single);
+    if (path == null || !context.mounted) {
+      showAppToast(
+        'Could not read that file. Try another file or save a copy to your device first.',
+        long: true,
+      );
+      return;
+    }
 
     DateTime? expiryInput;
     if (doc.documentType == DocumentTypes.doubleDisc ||
@@ -249,9 +275,15 @@ class _DocumentCard extends ConsumerWidget {
           );
       ref.invalidate(driverDocumentsProvider);
       if (context.mounted) showAppToast('Document submitted for review');
-    } catch (e) {
+    } catch (e, st) {
+      log(
+        'DocumentsScreen._reupload failed',
+        name: 'DocumentsScreen',
+        error: e,
+        stackTrace: st,
+      );
       if (context.mounted) {
-        showAppToast('Upload failed: $e', long: true);
+        showAppToast('Upload failed. ${userFacingError(e)}', long: true);
       }
     }
   }

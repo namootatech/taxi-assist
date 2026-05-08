@@ -16,13 +16,13 @@ class OnboardingGateScreen extends ConsumerWidget {
         _ => 'Onboarding',
       };
 
-  String get _body => switch (destination) {
+      String get _body => switch (destination) {
         AuthDestination.completeRegistration =>
-          'We could not load your driver profile yet. Check your Supabase `profiles` '
-          'table and RLS, then pull to refresh or sign in again.',
+          'We couldn\'t load your driver profile yet. Pull to refresh, or sign out and '
+          'sign in again. If this keeps happening, contact support.',
         AuthDestination.onboardingLinkVehicle =>
-          'Your profile is approved. Next, link an approved vehicle (Car ID + number plate) '
-          '— full flow arrives in a later build.',
+          'Your profile is approved. Next, link an approved vehicle (registration and '
+          'number plate). The full linking flow is coming in a later update.',
         _ => '',
       };
 

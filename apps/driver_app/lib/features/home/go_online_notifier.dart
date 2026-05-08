@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../core/utils/safe_text.dart';
 import '../../core/utils/toast.dart';
 import '../../shared/models/driver_enums.dart';
 import '../../shared/providers/app_providers.dart';
@@ -70,7 +71,7 @@ class GoOnlineNotifier extends StateNotifier<GoOnlineUiState> {
       showAppToast('You are now online');
     } catch (e) {
       state = state.copyWith(busy: false);
-      showAppToast('Could not go online: $e', long: true);
+      showAppToast(userFacingError(e), long: true);
     }
   }
 
@@ -87,7 +88,7 @@ class GoOnlineNotifier extends StateNotifier<GoOnlineUiState> {
       showAppToast('You are now offline');
     } catch (e) {
       state = state.copyWith(busy: false);
-      showAppToast('Could not go offline: $e', long: true);
+      showAppToast(userFacingError(e), long: true);
     }
   }
 
@@ -103,11 +104,11 @@ class GoOnlineNotifier extends StateNotifier<GoOnlineUiState> {
       await _ref.read(currentDriverProvider.notifier).refresh();
       state = state.copyWith(clearSession: true);
       showAppToast(
-        'You were set offline — documents or approval no longer allow online.',
+        'You\'re now offline — your documents or approval status changed.',
         long: true,
       );
     } catch (e) {
-      showAppToast('Compliance offline failed: $e', long: true);
+      showAppToast(userFacingError(e), long: true);
     }
   }
 

@@ -29,10 +29,12 @@ class OnboardingFlowScreen extends ConsumerWidget {
               )
             : null,
       ),
-      body: st.isBusy
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: AppSpacing.screenPadding,
+      body: Stack(
+        children: [
+          Padding(
+            padding: AppSpacing.screenPadding,
+            child: AbsorbPointer(
+              absorbing: st.isBusy,
               child: IndexedStack(
                 index: st.stepIndex,
                 children: [
@@ -42,6 +44,16 @@ class OnboardingFlowScreen extends ConsumerWidget {
                 ],
               ),
             ),
+          ),
+          if (st.isBusy) ...[
+            ModalBarrier(
+              dismissible: false,
+              color: Colors.black.withOpacity(0.35),
+            ),
+            const Center(child: CircularProgressIndicator()),
+          ],
+        ],
+      ),
     );
   }
 }
