@@ -46,7 +46,7 @@ export default function LandingPage() {
             Join Trip Media to prepare campaigns, manage packages, and reach riders through attention that happens on the move.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link className="focus-ring inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-[var(--background)]" href="/signup">
+            <Link className="focus-ring inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-[#07111f]" href="/signup">
               Start partner setup <ArrowRight className="size-4" aria-hidden />
             </Link>
             <Link className="focus-ring inline-flex items-center justify-center rounded-full border border-[var(--border)] px-6 py-3 text-sm font-black" href="/login">

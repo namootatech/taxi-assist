@@ -29,4 +29,22 @@ Copy `.env.example` to `.env.local` and fill in Supabase, analytics, and Sentry 
 
 This is the foundation prompt only: Next.js app shell, Supabase SSR clients, login/signup routes, protected dashboard placeholder, environment example, and README.
 
-Payfast/Paystack, webhooks, package billing, creative upload, and campaign CRUD are intentionally deferred to later prompts.
+## Partner media prompts
+
+Implemented prompt 02-05 foundations:
+
+- Partner workspace creation during signup when `SUPABASE_SERVICE_ROLE_KEY` is configured.
+- Partner tables, RLS policies, package seeds, subscriptions, billing events, creatives, and partner campaign fields in Supabase migrations.
+- Dashboard org context, creative library, campaign drafts, billing packages, and team access pages.
+- Payfast-first checkout URL generation and ITN/webhook handling with signature checks and idempotency storage.
+- Paystack webhook remains a documented placeholder until secondary-provider credentials are confirmed.
+
+## Payfast callbacks
+
+Set the sandbox or live notify URL to:
+
+```text
+https://<trip-media-domain>/api/payfast-webhook
+```
+
+The equivalent Supabase Edge Function scaffold also exists at `supabase/functions/payfast-webhook`.

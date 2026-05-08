@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
+import { logActionError, logActionInfo } from "@/lib/server-action-logger"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 export const dynamic = "force-dynamic"
@@ -14,16 +15,21 @@ export default async function LoginPage({
   async function signIn(formData: FormData) {
     "use server"
 
-    const email = String(formData.get("email") ?? "")
+    const email = String(formData.get("email") ?? "").trim().toLowerCase()
     const password = String(formData.get("password") ?? "")
+    const emailDomain = email.includes("@") ? email.split("@").at(-1) : "invalid"
     const safeNext = next?.startsWith("/") ? next : "/dashboard"
+    logActionInfo("trip_media.login", "started", { emailDomain, safeNext })
+
     const supabase = await createSupabaseServerClient()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
+      logActionError("trip_media.login", "auth_signin_failed", error, { emailDomain })
       redirect(`/login?error=${encodeURIComponent("Check your email and password, then try again.")}`)
     }
 
+    logActionInfo("trip_media.login", "completed", { emailDomain, safeNext })
     redirect(safeNext)
   }
 

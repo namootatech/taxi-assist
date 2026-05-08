@@ -35,7 +35,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  if (user && (request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/signup")) {
+  const isPartnerSetup = request.nextUrl.pathname === "/signup" && request.nextUrl.searchParams.get("setup") === "partner"
+
+  if (user && (request.nextUrl.pathname === "/login" || (request.nextUrl.pathname === "/signup" && !isPartnerSetup))) {
     const dashboardUrl = request.nextUrl.clone()
     dashboardUrl.pathname = "/dashboard"
     dashboardUrl.search = ""
