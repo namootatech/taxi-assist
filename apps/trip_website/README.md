@@ -17,7 +17,17 @@ npm run dev
 
 ## Environment
 
-Copy `.env.example` to `.env.local` and fill in public URLs when the app store, partner portal, analytics, and Sentry resources are ready.
+Copy `.env.example` to `.env.local` and set the required values below.
+
+| Variable | Required | Purpose |
+|------|------|------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon key used to invoke the `send-email` Edge Function |
+| `SUPABASE_URL` | Recommended | Server-side fallback URL for Supabase calls |
+| `SUPABASE_ANON_KEY` | Recommended | Server-side fallback anon key for function calls |
+| `EMAIL_INTERNAL_SECRET` | Yes | Shared secret sent to the `send-email` Edge Function |
+
+Supabase function secrets for email delivery are documented in `supabase/functions/send-email/README.md`.
 
 ## Observability and deployment
 
