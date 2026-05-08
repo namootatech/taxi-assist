@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Trip — Admin console
 
-## Getting Started
+Internal Next.js 15 app that gives Operations, Compliance, Finance, Ad Moderation, Support, and Fraud Analysts the controls they need to run the Trip platform.
 
-First, run the development server:
+## Stack
+
+- Next.js 15 (App Router) + TypeScript (strict)
+- Tailwind CSS with project-wide design tokens (`app/globals.css`)
+- Supabase (server + browser clients in `lib/supabase/`)
+- React Hook Form + Zod for forms, Sonner for toasts
+- Sentry for error reporting (instrumentation files at the app root)
+- Reverse proxy at `proxy.ts` for route-level auth + capability gating
+
+## Run locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Set these variables in `.env.local`:
 
-## Learn More
+| Variable | Required | Purpose |
+| ------------------ | -------- | ------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL used by server and browser clients |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon key used for auth and invoking `send-email` |
+| `EMAIL_INTERNAL_SECRET` | Yes | Shared secret required by the `send-email` Edge Function |
 
-To learn more about Next.js, take a look at the following resources:
+Supabase function-level email secrets are documented in `supabase/functions/send-email/README.md`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Module overview
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Area               | Routes                                                                                  | Notes                                       |
+| ------------------ | --------------------------------------------------------------------------------------- | ------------------------------------------- |
+| Auth               | `/(auth)/login`, `/(auth)/register`                                                     | Supabase Auth                               |
+| Verification       | `/verification`                                                                         | Document review for compliance              |
+| Drivers / Riders   | `/drivers`, `/riders`, `/vehicles`                                                      | Browse, suspend, intervene                  |
+| Trips              | `/trips`, `/trips/[id]`                                                                 | Live + historical                           |
+| Wallets / Payments | `/wallets`, `/payments`                                                                 | Ledger view + adjustments                   |
+| Trip Media         | `/creatives`, `/ads`, `/trip-media/{overview,advertisers,rider-rewards,fraud,analytics,reports,settings}` | New: see below           |
+| Support            | `/support`                                                                              | Tickets and replies                         |
+| Audit              | `/audit`                                                                                | Append-only history                         |
+| Admins             | `/admins`                                                                               | Super Admin only                            |
 
-## Deploy on Vercel
+## Trip Media console
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Built May 2026. Shipped as a sidebar group with two parents:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `/creatives` and `/ads` — kept at their original URLs.
+- `/trip-media/*` — overview, advertisers, rider-rewards, fraud, analytics, reports, settings.
+
+What it does:
+
+- **Creative review** with signed-URL preview and Approve / Reject / Request changes / Suspend / Flag actions.
+- **Campaign oversight** with Pause, Resume, Force-stop, Adjust delivery, and an anomaly link into Fraud.
+- **Advertiser oversight** with Suspend / Restore and Adjust promotional credits.
+- **Rider rewards** with Freeze and Reverse (gated separately for fraud analysts vs finance).
+- **Fraud triage** with status + level filters, a triage panel, and auto-generated candidates.
+- **Analytics** for the last 14 days (completion trends, peak hours, top campaigns, completion distribution, average reward cost).
+- **Reports** as four streamed CSVs, audited via `admin_record_report_run`.
+- **Settings** for reward caps, rejection reasons, risk thresholds, and watch rules — persisted to `trip_media_settings`.
+
+The 7-role capability matrix lives in `lib/permissions.ts` and is documented in `docs/planning/admin/planning/user-roles-and-permissions.md`. New role added: `fraud_analyst`.
+
+The migration that introduces the schema is `supabase/migrations/20260508140000_trip_media_admin_oversight.sql`.
+
+## Conventions
+
+- Server-first: data fetching happens in Server Components; client components are reserved for interaction (`use client` flag).
+- Forms: every new form uses `react-hook-form` + `zod` with `sonner` toasts.
+- Reasons: every destructive or financial action requires a reason that the audit log keeps.
+- Native dialogs: do not use `window.prompt` / `window.confirm`. Use `components/trip-media/PromptDialog.tsx` or `components/feedback/ConfirmDialog.tsx`.
+- Capability checks happen three times: in `proxy.ts` (route), in the server action / route handler, and in the SQL function (`SECURITY DEFINER` RPCs).
