@@ -50,93 +50,39 @@ This section summarizes what is **already implemented** in `supabase/migrations/
     - `public.driver_rate_completed_trip(...)`
   - Realtime publication includes `public.trips`.
 - **Trip locations**: `public.trip_locations` with insert/select policies.
-- **Support tickets**: `public.support_tickets` (driver insert/select own).
-- **Payouts**: `public.payouts` (driver select own; admin/service inserts later).
+- **Support tickets**: `public.support_tickets` (driver insert/select own; admin select/update policies exist).
+- **Payouts**: `public.payouts` (driver select own; admin select/update policies exist; payout proof/status UI still partial).
 - **Storage**:
   - Buckets: `driver-documents`, `vehicle-photos` (currently public)
   - Policies enforce `{auth.uid()}/...` prefix ownership.
 
-### Gaps to build the Admin Platform (migrations to add)
+### Admin platform implementation state (codebase scan 2026-05-08)
 
-#### 1) Admin identity + RBAC (required)
+The following items previously listed as admin schema gaps now have migration anchors:
 
-Add tables and policies so that an authenticated **admin user** can read/write admin-only data under RLS.
+- **Admin identity + RBAC:** `admin_profiles`, `is_admin()`, `admin_role()`, and admin RLS policies are in `20260507153000_admin_rbac_audit_and_admin_rls.sql`.
+- **Admin-facing RLS:** admin select/update policies exist for profiles, vehicles, documents, trips, trip locations, support tickets, and payouts in `20260507153000_admin_rbac_audit_and_admin_rls.sql`; support ticket update policy is extended in `20260507161000_admin_support_ticket_updates.sql`.
+- **Audit logging:** `audit_logs` and `admin_audit_log(...)` exist in `20260507153000_admin_rbac_audit_and_admin_rls.sql`.
+- **Wallets + ledger:** `wallets`, `wallet_transactions`, and `admin_wallet_adjust(...)` exist in `20260507160000_admin_wallets_ads_trip_events_and_expiry.sql`.
+- **Ads:** `ad_campaigns` and `ad_views` exist in `20260507160000_admin_wallets_ads_trip_events_and_expiry.sql`.
+- **Trip events:** `trip_events` exists in `20260507160000_admin_wallets_ads_trip_events_and_expiry.sql`; driver cancellation writes events via `20260508052000_driver_cancel_reason_required.sql`.
+- **Document expiry automation:** `apply_document_expiry()` and `expire_approved_documents()` exist in `20260507160000_admin_wallets_ads_trip_events_and_expiry.sql`.
 
-- `public.admin_profiles`:
-  - `user_id uuid primary key references auth.users(id)`
-  - `role text not null` (enum-like check constraint)
-  - `created_at`, `disabled_at`, optional `display_name`
-- Optional `public.admin_role_permissions` (if capability matrix needs to be data-driven)
+### Remaining admin/platform gaps
 
-RLS requirements:
+#### 1) Admin UI depth
 
-- Only admins can `select` from `admin_profiles`.
-- Allow `superadmin` to manage admin profiles; other roles read-only or none.
+`apps/admin_app` has substantial routes for dashboard, verification, drivers, vehicles, riders, trips, wallets, ads, support, audit, admins, analytics, payments, ratings, and settings. Some routes remain scaffolding or thin MVP surfaces:
 
-#### 2) Admin-facing RLS policies on existing tables
+- `analytics`, `payments`, and `settings` are explicitly marked scaffolding in code.
+- `riders` notes future search/filter/inline actions.
+- Admin trip interventions and payout proof handling need deeper UI/RPC coverage before production operations.
 
-Today, many tables are “driver owns row” policies. Admin app requires **read access** and **mutation access** (approve/reject, suspend, etc.) under RLS.
+#### 2) Storage hardening for POPIA
 
-Approach:
+Buckets are still recorded as public in the original storage migration. Admin verification uses signed URLs, but POPIA hardening still requires making buckets private and aligning storage object policies for driver/admin access.
 
-- Create `public.is_admin()` helper (security definer) that checks `admin_profiles` for `auth.uid()`.
-- Create `public.admin_role()` helper for role-based policies.
-- Add `select` policies on:
-  - `profiles`, `vehicles`, `documents`, `trips`, `trip_locations`, `support_tickets`, `payouts`
-- Add carefully scoped `update` policies for admin actions:
-  - `documents`: set `status`, `reviewed_by`, `reviewed_at`, `decline_reason`
-  - `profiles`: set `status`, `online_status` (force offline), flags/suspensions
-  - `vehicles`: set `status`
-  - `trips`: admin cancel + reason, (rare) fare adjustment fields
-  - `payouts`: status transitions + references
-
-#### 3) Audit logging (required)
-
-Add `public.audit_logs` (append-only) with a consistent schema:
-
-- `audit_id bigserial primary key`
-- `actor_admin_user_id uuid` (auth.users id)
-- `actor_role text`
-- `action text` (e.g. `document.approve`, `profile.suspend`)
-- `entity_type text`, `entity_id uuid`
-- `reason text` (mandatory for sensitive actions)
-- `metadata jsonb` (diff snapshot)
-- `created_at timestamptz default now()`
-
-Implementation:
-
-- Prefer trigger helpers like `public.audit_log_insert(...)` called from RPCs or from controlled UPDATE triggers.
-- For high-risk mutations, prefer **RPCs** that both mutate and audit in one transaction.
-
-#### 4) Wallets + ledger (required by PRD/business logic)
-
-Missing tables:
-
-- `public.wallets` (one per profile per wallet type)
-- `public.wallet_transactions` (append-only ledger)
-
-Constraints:
-
-- Non-negative balance invariant enforced via:
-  - computed balance from ledger, or
-  - balance column + trigger that blocks negative results.
-
-Admin actions:
-
-- Manual adjustment RPC requiring reason + optional second-factor approvals later.
-
-#### 5) Ads (Taxi Assist Media) (required by PRD/business logic)
-
-Missing tables:
-
-- `public.ad_campaigns`
-- `public.ad_views`
-
-Key rule:
-
-- Reward credit only after **full watch + rating + comment** → model as `ad_views.state` with required fields, and only then allow wallet credit transaction.
-
-#### 5b) Partner media & billing (Trip Media Web — add with or after §5)
+#### 3) Partner media & billing (Trip Media Web — add after/admin alongside ads)
 
 Missing tables (planning detail in `trip_media_web/planning/data-model-and-app-entities.md`):
 
@@ -152,42 +98,6 @@ Edge:
 
 - Webhook handlers for **Payfast** (primary ZA) and optional **Paystack**; idempotent processing
 
-#### 6) Trip events / admin interventions (required)
+#### 4) Rider trip/wallet/ad execution paths
 
-Add `public.trip_events` (append-only event stream) capturing:
-
-- status transitions, cancels, fare adjustments, dispute events
-- actor info (driver vs admin)
-
-#### 7) Document expiry automation + side effects
-
-Current migrations include an index; they do **not** implement the automated transition.
-
-Add either:
-
-- a `pg_cron` job (preferred for “daily sweep”), or
-- an `on update/insert` trigger that sets `EXPIRED` when `expiry_date < today` (still needs periodic enforcement).
-
-Side effects:
-
-- if critical docs expire → prevent go-online (already checked) and optionally force offline.
-
-#### 8) Storage hardening for POPIA
-
-Buckets are currently `public=true`. For admin platform + POPIA, plan to:
-
-- make buckets private
-- use signed URLs for document viewing
-- keep RLS on `storage.objects` aligned to admin access
-
-### Suggested migration ordering (when you build later)
-
-1. `admin_profiles` + admin helper functions (`is_admin`, `admin_role`)
-2. Admin RLS `select` policies on existing tables
-3. `audit_logs` + audit helper functions/RPC pattern
-4. Admin mutation policies (or RPCs) for documents/profiles/vehicles/trips/payouts
-5. Wallets + ledger
-6. Ads tables + reward credit logic
-7. `trip_events`
-8. Document expiry automation
-9. Storage bucket privacy + signed URL strategy
+Rider app remains docs-only. Confirm RLS/RPC design for rider trip requests, rider location writes, wallet consumption, and ad reward crediting before executing rider prompts.
