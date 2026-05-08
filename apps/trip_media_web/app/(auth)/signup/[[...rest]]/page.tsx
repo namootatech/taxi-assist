@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { createClerkSupabaseServerClient } from '@/lib/supabase/server';
-import { ClerkSignupClient } from './ClerkSignupClient';
-import { ClerkInviteAcceptClient } from './invite/ClerkInviteAcceptClient';
+import { ClerkSignupClient } from '../ClerkSignupClient';
+import { ClerkInviteAcceptClient } from '../invite/ClerkInviteAcceptClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -114,39 +114,7 @@ function PartnerSignupShell({
 
   return (
     <main className='grid min-h-svh place-items-center px-5 py-10'>
-      <section className='panel w-full max-w-md rounded-[1.5rem] p-6'>
-        <Link
-          href='/'
-          className='focus-ring rounded-lg text-sm font-black uppercase tracking-[0.24em]'
-        >
-          Trip Media
-        </Link>
-        <h1 className='mt-8 text-3xl font-black tracking-[-0.04em]'>
-          {isPartnerSetup ? 'Finish partner setup.' : 'Start partner setup.'}
-        </h1>
-        <p className='mt-3 leading-7 muted'>
-          {isPartnerSetup
-            ? 'Add your company workspace so creatives, campaigns, and team access connect to the right partner.'
-            : 'Create your login and company workspace. Billing and campaign launch come next.'}
-        </p>
-        {error ? (
-          <div className='mt-5 rounded-2xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100'>
-            {error}
-          </div>
-        ) : null}
-        <ClerkSignupClient />
-        {isPartnerSetup ? null : (
-          <p className='mt-5 text-sm muted'>
-            Already have access?{' '}
-            <Link
-              className='focus-ring rounded-lg font-bold text-white underline-offset-4 hover:underline'
-              href='/login'
-            >
-              Log in
-            </Link>
-          </p>
-        )}
-      </section>
+      <ClerkSignupClient />
     </main>
   );
 }

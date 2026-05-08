@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { GoogleAnalytics } from "@/components/google-analytics"
+import { ClerkProvider } from "@clerk/nextjs"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -74,10 +75,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
-        {children}
+        {clerkPublishableKey ? <ClerkProvider>{children}</ClerkProvider> : children}
         <GoogleAnalytics />
       </body>
     </html>

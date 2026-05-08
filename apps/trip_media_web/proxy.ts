@@ -1,7 +1,9 @@
 import { createServerClient } from "@supabase/ssr"
-import { NextResponse, type NextRequest } from "next/server"
+import { clerkMiddleware } from "@clerk/nextjs/server"
+import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server"
 
-export async function proxy(request: NextRequest) {
+const clerkProxy = clerkMiddleware(async (_auth, request: NextRequest) => {
+  const pathname = request.nextUrl.pathname
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -35,9 +37,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  const isPartnerSetup = request.nextUrl.pathname === "/signup" && request.nextUrl.searchParams.get("setup") === "partner"
+  const isPartnerSetup =
+    request.nextUrl.pathname === "/signup" && request.nextUrl.searchParams.get("setup") === "partner"
+  const hasInviteToken = request.nextUrl.pathname === "/signup" && request.nextUrl.searchParams.has("invite")
+  const isLoginInvite = request.nextUrl.pathname === "/login" && request.nextUrl.searchParams.has("invite")
 
-  if (user && (request.nextUrl.pathname === "/login" || (request.nextUrl.pathname === "/signup" && !isPartnerSetup))) {
+  if (
+    user &&
+    ((request.nextUrl.pathname === "/login" && !isLoginInvite) ||
+      (request.nextUrl.pathname === "/signup" && !isPartnerSetup && !hasInviteToken))
+  ) {
     const dashboardUrl = request.nextUrl.clone()
     dashboardUrl.pathname = "/dashboard"
     dashboardUrl.search = ""
@@ -45,6 +54,10 @@ export async function proxy(request: NextRequest) {
   }
 
   return response
+})
+
+export async function proxy(request: NextRequest, event: NextFetchEvent) {
+  return clerkProxy(request, event)
 }
 
 export const config = {
