@@ -5,29 +5,76 @@ import '../../core/constants/app_spacing.dart';
 import '../../features/auth/auth_routing.dart';
 import '../../shared/providers/app_providers.dart';
 
-class OnboardingGateScreen extends ConsumerWidget {
+class OnboardingGateScreen extends ConsumerStatefulWidget {
   const OnboardingGateScreen({super.key, required this.destination});
 
   final AuthDestination destination;
 
-      String get _title => switch (destination) {
+  @override
+  ConsumerState<OnboardingGateScreen> createState() => _OnboardingGateScreenState();
+}
+
+class _OnboardingGateScreenState extends ConsumerState<OnboardingGateScreen> {
+  bool _isAutoLinking = false;
+  String? _autoLinkMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAutoLinkVehicle());
+  }
+
+  Future<void> _maybeAutoLinkVehicle() async {
+    if (widget.destination != AuthDestination.onboardingLinkVehicle) return;
+    if (_isAutoLinking) return;
+    setState(() {
+      _isAutoLinking = true;
+      _autoLinkMessage = 'Checking your vehicle details…';
+    });
+
+    try {
+      final svc = ref.read(supabaseServiceProvider);
+      final vehicle = await svc.fetchMyLinkedVehicle();
+      final vehicleId = (vehicle?['vehicle_id'] ?? vehicle?['id']) as String?;
+      if (vehicleId == null || vehicleId.isEmpty) {
+        setState(() {
+          _autoLinkMessage = 'No vehicle found yet. If you just submitted, try again in a moment.';
+          _isAutoLinking = false;
+        });
+        return;
+      }
+
+      await svc.updateProfile({'current_vehicle_id': vehicleId});
+      await ref.read(currentDriverProvider.notifier).refresh();
+      setState(() {
+        _autoLinkMessage = 'Vehicle linked. Loading your dashboard…';
+        _isAutoLinking = false;
+      });
+    } catch (e) {
+      setState(() {
+        _autoLinkMessage = 'Couldn’t link your vehicle automatically. Pull to refresh or contact support.';
+        _isAutoLinking = false;
+      });
+    }
+  }
+
+  String get _title => switch (widget.destination) {
         AuthDestination.completeRegistration => 'Complete registration',
         AuthDestination.onboardingLinkVehicle => 'Link your vehicle',
         _ => 'Onboarding',
       };
 
-      String get _body => switch (destination) {
+  String get _body => switch (widget.destination) {
         AuthDestination.completeRegistration =>
           'We couldn\'t load your driver profile yet. Pull to refresh, or sign out and '
           'sign in again. If this keeps happening, contact support.',
         AuthDestination.onboardingLinkVehicle =>
-          'Your profile is approved. Next, link an approved vehicle (registration and '
-          'number plate). The full linking flow is coming in a later update.',
+          'Your profile is approved. We’re finishing setup using the vehicle you already registered.',
         _ => '',
       };
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(_title)),
       body: RefreshIndicator(
@@ -36,9 +83,23 @@ class OnboardingGateScreen extends ConsumerWidget {
           padding: AppSpacing.screenPadding,
           children: [
             Text(_body, style: Theme.of(context).textTheme.bodyLarge),
+            if (widget.destination == AuthDestination.onboardingLinkVehicle) ...[
+              const SizedBox(height: 12),
+              Text(
+                _autoLinkMessage ?? 'Pull to refresh to continue.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: () => ref.read(currentDriverProvider.notifier).refresh(),
+              onPressed: _isAutoLinking
+                  ? null
+                  : () async {
+                      if (widget.destination == AuthDestination.onboardingLinkVehicle) {
+                        await _maybeAutoLinkVehicle();
+                      }
+                      await ref.read(currentDriverProvider.notifier).refresh();
+                    },
               child: const Text('Refresh status'),
             ),
             const SizedBox(height: 12),

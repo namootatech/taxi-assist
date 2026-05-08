@@ -75,7 +75,28 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
     super.dispose();
   }
 
+  /// Keeps typed form values in [OnboardingState] so rebuilds / picker return do not wipe fields.
+  void _persistDraftToNotifier() {
+    final st = ref.read(onboardingNotifierProvider(widget.profileId));
+    ref.read(onboardingNotifierProvider(widget.profileId).notifier).savePersonalFromForm(
+          fullName: _name.text,
+          idNumber: _idNumber.text,
+          dob: st.dob,
+          sex: st.sex,
+          residentialAddress: _address.text,
+          licenseNumber: _license.text,
+          licenseCode: _code.text,
+          pdpNumber: _pdp.text,
+          pdpExpiry: st.pdpExpiry,
+          bankAccountHolder: _bankHolder.text,
+          bankName: _bankName.text,
+          bankAccountNumber: _bankAcct.text,
+          bankBranchCode: _bankBranch.text,
+        );
+  }
+
   Future<void> _pickDob() async {
+    _persistDraftToNotifier();
     final st = ref.read(onboardingNotifierProvider(widget.profileId));
     final now = DateTime.now();
     final d = await showDatePicker(
@@ -91,6 +112,7 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
   }
 
   Future<void> _pickPdpExpiry() async {
+    _persistDraftToNotifier();
     final st = ref.read(onboardingNotifierProvider(widget.profileId));
     final now = DateTime.now();
     final d = await showDatePicker(
@@ -116,8 +138,9 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
   @override
   Widget build(BuildContext context) {
     final st = ref.watch(onboardingNotifierProvider(widget.profileId));
-    final n = ref.read(onboardingNotifierProvider(widget.profileId).notifier);
     final scheme = Theme.of(context).colorScheme;
+    OnboardingNotifier notifier() =>
+        ref.read(onboardingNotifierProvider(widget.profileId).notifier);
 
     return SingleChildScrollView(
       child: Column(
@@ -167,7 +190,7 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
               DropdownMenuItem(value: 'OTHER', child: Text('Other')),
             ],
             onChanged: (v) {
-              if (v != null) n.setSex(v);
+              if (v != null) notifier().setSex(v);
             },
           ),
           const SizedBox(height: 12),
@@ -258,35 +281,59 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
             title: 'Selfie',
             path: st.selfiePath,
             onPick: () async {
+              _persistDraftToNotifier();
               final path = await pickImageFromSheet(context);
-              if (path != null) n.setSelfiePath(path);
+              if (path != null) {
+                _persistDraftToNotifier();
+                ref
+                    .read(onboardingNotifierProvider(widget.profileId).notifier)
+                    .setSelfiePath(path);
+              }
             },
           ),
           _docTile(
             context,
-            title: 'ID document',
+            title: 'ID document (photo or PDF)',
             path: st.idDocPath,
             onPick: () async {
-              final path = await pickImageFromSheet(context);
-              if (path != null) n.setIdDocPath(path);
+              _persistDraftToNotifier();
+              final path = await pickPdfOrImageDocument(context);
+              if (path != null) {
+                _persistDraftToNotifier();
+                ref
+                    .read(onboardingNotifierProvider(widget.profileId).notifier)
+                    .setIdDocPath(path);
+              }
             },
           ),
           _docTile(
             context,
-            title: 'Driver license (photo)',
+            title: 'Driver licence (photo or PDF)',
             path: st.licenseDocPath,
             onPick: () async {
-              final path = await pickImageFromSheet(context);
-              if (path != null) n.setLicenseDocPath(path);
+              _persistDraftToNotifier();
+              final path = await pickPdfOrImageDocument(context);
+              if (path != null) {
+                _persistDraftToNotifier();
+                ref
+                    .read(onboardingNotifierProvider(widget.profileId).notifier)
+                    .setLicenseDocPath(path);
+              }
             },
           ),
           _docTile(
             context,
-            title: 'Proof of residence',
+            title: 'Proof of residence (photo or PDF)',
             path: st.proofResidencePath,
             onPick: () async {
-              final path = await pickImageFromSheet(context);
-              if (path != null) n.setProofResidencePath(path);
+              _persistDraftToNotifier();
+              final path = await pickPdfOrImageDocument(context);
+              if (path != null) {
+                _persistDraftToNotifier();
+                ref
+                    .read(onboardingNotifierProvider(widget.profileId).notifier)
+                    .setProofResidencePath(path);
+              }
             },
           ),
           _docTile(
@@ -294,8 +341,14 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
             title: 'Bank statement (optional)',
             path: st.bankStatementPath,
             onPick: () async {
-              final path = await pickRegistrationFile();
-              if (path != null) n.setBankStatementPath(path);
+              _persistDraftToNotifier();
+              final path = await pickPdfOrImageDocument(context);
+              if (path != null) {
+                _persistDraftToNotifier();
+                ref
+                    .read(onboardingNotifierProvider(widget.profileId).notifier)
+                    .setBankStatementPath(path);
+              }
             },
           ),
           const SizedBox(height: 24),
@@ -304,7 +357,7 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
                 ? null
                 : () async {
                     FocusScope.of(context).unfocus();
-                    n.savePersonalFromForm(
+                    notifier().savePersonalFromForm(
                       fullName: _name.text,
                       idNumber: _idNumber.text,
                       dob: st.dob,
@@ -319,7 +372,7 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
                       bankAccountNumber: _bankAcct.text,
                       bankBranchCode: _bankBranch.text,
                     );
-                    await n.completeStep1();
+                    await notifier().completeStep1();
                   },
             child: const Text('Save & continue'),
           ),

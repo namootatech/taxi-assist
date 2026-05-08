@@ -47,6 +47,7 @@ class SupabaseService {
     'registration_submitted',
     'status',
     'online_status',
+    'current_vehicle_id',
   };
 
   static const vehiclesTable = 'vehicles';
@@ -192,6 +193,25 @@ class SupabaseService {
           'vehicle_id, make, model, registration_number, category, status, colour',
         )
         .eq('vehicle_id', vehicleId)
+        .maybeSingle();
+    if (row == null) return null;
+    return Map<String, dynamic>.from(row);
+  }
+
+  /// Vehicle captured during onboarding (the one linked to this driver profile).
+  ///
+  /// Used to self-heal cases where the backend approved the profile but
+  /// `profiles.current_vehicle_id` is missing.
+  Future<Map<String, dynamic>?> fetchMyLinkedVehicle() async {
+    final uid = auth.currentUser?.id;
+    if (uid == null) return null;
+    final row = await client
+        .from(vehiclesTable)
+        .select(
+          'vehicle_id, make, model, registration_number, category, status, colour',
+        )
+        .eq('linked_driver_id', uid)
+        .order('created_at', ascending: false)
         .maybeSingle();
     if (row == null) return null;
     return Map<String, dynamic>.from(row);

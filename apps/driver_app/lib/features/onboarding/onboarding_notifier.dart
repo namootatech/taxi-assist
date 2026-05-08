@@ -13,8 +13,9 @@ import '../../shared/services/document_upload_service.dart';
 import '../../shared/services/supabase_service.dart';
 import 'onboarding_state.dart';
 
-final onboardingNotifierProvider = StateNotifierProvider.autoDispose
-    .family<OnboardingNotifier, OnboardingState, String>((ref, profileId) {
+final onboardingNotifierProvider =
+    StateNotifierProvider.family<OnboardingNotifier, OnboardingState, String>(
+        (ref, profileId) {
   // IMPORTANT: returning from Android pickers can cause auth/profile providers
   // to briefly rebuild/loading. We must not throw here, otherwise the onboarding
   // route rebuilds and the driver loses progress.
@@ -328,6 +329,8 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       if (vehicleId == null || vehicleId.isEmpty) {
         throw StateError('Server did not return vehicle_id');
       }
+
+      await _svc.updateProfile({'current_vehicle_id': vehicleId});
 
       final v = state.vehicleDraft;
 

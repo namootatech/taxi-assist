@@ -101,6 +101,7 @@ class TripService {
     required String tripId,
     double? finalFare,
     double? finalDistanceM,
+    String? cancelReason,
   }) async {
     return Map<String, dynamic>.from(
       await _client.rpc(
@@ -110,6 +111,7 @@ class TripService {
           'p_action': action,
           'p_final_fare': finalFare,
           'p_final_distance_m': finalDistanceM,
+          'p_cancel_reason': cancelReason,
         },
       ) as Map,
     );
@@ -161,8 +163,17 @@ class TripService {
     }
   }
 
-  Future<void> cancelEnRoute(String tripId) async {
-    final res = await _rpc('cancel_en_route', tripId: tripId);
+  Future<void> cancelEnRoute(String tripId, {required String reason}) async {
+    final trimmedReason = reason.trim();
+    if (trimmedReason.isEmpty) {
+      throw TripStateException('Cancellation reason required');
+    }
+
+    final res = await _rpc(
+      'cancel_en_route',
+      tripId: tripId,
+      cancelReason: trimmedReason,
+    );
     if (res['ok'] != true) {
       throw TripStateException('${res['error'] ?? res}');
     }

@@ -220,6 +220,61 @@ class _ActiveTripScreenState extends ConsumerState<ActiveTripScreen> {
     }
   }
 
+  Future<void> _cancelTripFlow() async {
+    final reasonController = TextEditingController();
+    try {
+      final reason = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Cancel trip?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('Cancelling before pickup may take you offline.'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: reasonController,
+                decoration: const InputDecoration(
+                  labelText: 'Reason (required)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+                textInputAction: TextInputAction.done,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('No'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final reason = reasonController.text.trim();
+                if (reason.isEmpty) return;
+                Navigator.pop(ctx, reason);
+              },
+              child: const Text('Cancel trip'),
+            ),
+          ],
+        ),
+      );
+
+      if (reason == null || !mounted) return;
+
+      try {
+        await ref.read(tripServiceProvider).cancelEnRoute(t.tripId, reason: reason);
+        await ref.read(supabaseServiceProvider).updateProfile({'online_status': 'OFFLINE'});
+        showAppToast('Trip cancelled — you are offline.');
+      } catch (e) {
+        showAppToast('$e', long: true);
+      }
+    } finally {
+      reasonController.dispose();
+    }
+  }
+
   @override
   void dispose() {
     _locationTimer?.cancel();
@@ -342,38 +397,7 @@ class _ActiveTripScreenState extends ConsumerState<ActiveTripScreen> {
                     if (t.status == TripStatus.enRoutePickup ||
                         t.status == TripStatus.arrivedPickup)
                       TextButton(
-                        onPressed: () async {
-                          final ok = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Cancel trip?'),
-                              content: const Text(
-                                'PRD: cancelling before pickup may take you offline.',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text('No'),
-                                ),
-                                FilledButton(
-                                  onPressed: () => Navigator.pop(ctx, true),
-                                  child: const Text('Yes, cancel'),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (ok == true && mounted) {
-                            try {
-                              await ref.read(tripServiceProvider).cancelEnRoute(t.tripId);
-                              await ref
-                                  .read(supabaseServiceProvider)
-                                  .updateProfile({'online_status': 'OFFLINE'});
-                              showAppToast('Trip cancelled — you are offline.');
-                            } catch (e) {
-                              showAppToast('$e');
-                            }
-                          }
-                        },
+                        onPressed: _cancelTripFlow,
                         child: const Text('Cancel trip'),
                       ),
                   ],

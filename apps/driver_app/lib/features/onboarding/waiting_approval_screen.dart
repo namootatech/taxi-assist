@@ -1,13 +1,21 @@
+import 'dart:developer' show log;
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_spacing.dart';
+import '../../core/utils/picked_file_path.dart';
 import '../../core/supabase_client.dart';
 import '../../core/utils/safe_text.dart';
+import '../../core/utils/toast.dart';
 import '../../shared/models/document_item.dart';
+import '../../shared/models/document_types.dart';
 import '../../shared/providers/app_providers.dart';
 import '../../shared/services/supabase_service.dart';
+import '../documents/document_providers.dart';
 
 /// After `registration_submitted`, while profile is still PENDING — listen for
 /// `documents` updates via Realtime.
@@ -24,6 +32,39 @@ class _WaitingApprovalScreenState extends ConsumerState<WaitingApprovalScreen> {
   RealtimeChannel? _channel;
   bool _loading = true;
   String? _error;
+  bool _uploading = false;
+
+  List<DocumentItem> _latestPerType(List<DocumentItem> docs) {
+    final byKey = <String, DocumentItem>{};
+    for (final d in docs) {
+      final key = '${d.entityType}|${d.entityId}|${d.documentType}';
+      final existing = byKey[key];
+      if (existing == null) {
+        byKey[key] = d;
+        continue;
+      }
+      final a = existing.createdAt;
+      final b = d.createdAt;
+      if (a == null && b != null) {
+        byKey[key] = d;
+        continue;
+      }
+      if (a != null && b != null && b.isAfter(a)) {
+        byKey[key] = d;
+        continue;
+      }
+    }
+    final list = byKey.values.toList();
+    list.sort((a, b) {
+      final da = a.createdAt;
+      final db = b.createdAt;
+      if (da == null && db == null) return 0;
+      if (da == null) return 1;
+      if (db == null) return -1;
+      return db.compareTo(da);
+    });
+    return list;
+  }
 
   @override
   void initState() {
@@ -41,7 +82,7 @@ class _WaitingApprovalScreenState extends ConsumerState<WaitingApprovalScreen> {
       final rows = await ref.read(supabaseServiceProvider).listMyDocuments();
       if (!mounted) return;
       setState(() {
-        _docs = rows.map(DocumentItem.fromRow).toList();
+        _docs = _latestPerType(rows.map(DocumentItem.fromRow).toList());
         _loading = false;
       });
     } catch (e) {
@@ -95,9 +136,73 @@ class _WaitingApprovalScreenState extends ConsumerState<WaitingApprovalScreen> {
   Color _statusColor(String status, ColorScheme scheme) {
     return switch (status.toUpperCase()) {
       'APPROVED' => Colors.green.shade700,
+      'DECLINED' => scheme.error,
       'REJECTED' => scheme.error,
+      'EXPIRED' => scheme.error,
       _ => scheme.secondary,
     };
+  }
+
+  Future<void> _reupload(DocumentItem doc) async {
+    if (_uploading) return;
+    final uid = ref.read(supabaseClientProvider).auth.currentUser?.id;
+    if (uid == null) {
+      showAppToast('You are not signed in.');
+      return;
+    }
+
+    final pick = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+      withData: true,
+    );
+    if (pick == null || pick.files.isEmpty || !mounted) return;
+
+    final path = await materializePickedFile(pick.files.single);
+    if (path == null || !mounted) {
+      showAppToast(
+        'Could not read that file. Try another file or save a copy to your device first.',
+        long: true,
+      );
+      return;
+    }
+
+    DateTime? expiryInput;
+    if (doc.documentType == DocumentTypes.doubleDisc ||
+        doc.documentType == DocumentTypes.insurance) {
+      final chosen = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now().add(const Duration(days: 365)),
+        firstDate: DateTime.now(),
+        lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
+      );
+      expiryInput = chosen;
+      if (expiryInput == null) return;
+    }
+
+    setState(() => _uploading = true);
+    try {
+      showAppToast('Uploading…', long: true);
+      await ref.read(documentServiceProvider).uploadDocument(
+            documentType: doc.documentType,
+            file: File(path),
+            entityId: doc.entityType == EntityTypes.driver ? uid : doc.entityId,
+            expiryDate: expiryInput,
+          );
+      if (mounted) {
+        showAppToast('Document submitted for review');
+        await _load();
+      }
+    } catch (e, st) {
+      log(
+        'WaitingApprovalScreen._reupload failed',
+        name: 'WaitingApprovalScreen',
+        error: e,
+        stackTrace: st,
+      );
+      if (mounted) showAppToast('Upload failed. ${userFacingError(e)}', long: true);
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
   }
 
   @override
@@ -131,10 +236,43 @@ class _WaitingApprovalScreenState extends ConsumerState<WaitingApprovalScreen> {
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
                   title: Text(d.documentType),
-                  subtitle: Text(
-                    d.filePath ?? '—',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        d.filePath ?? '—',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (d.declineReason != null &&
+                          d.declineReason!.trim().isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'Reason: ${d.declineReason}',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                      if (d.canReupload) ...[
+                        const SizedBox(height: 10),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: OutlinedButton.icon(
+                            onPressed: _uploading ? null : () => _reupload(d),
+                            icon: _uploading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.upload_file),
+                            label: const Text('Resubmit document'),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   trailing: Chip(
                     label: Text(d.status),
