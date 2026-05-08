@@ -10,7 +10,9 @@ Central systems **must not** be re-implemented per app. One implementation, many
 | **Trips & locations** | `public.trips`, `public.trip_locations`, RPCs | driver_app, admin_app, rider_app (planned) | **Partial** (driver path strong; rider RLS/write paths TBD) |
 | **Notifications** | FCM / Edge triggers (per specs) | driver, rider, admin | **Mixed / TBD** |
 | **Wallet & ledger** | Planned `wallets` + `wallet_transactions` | rider, driver, admin | **Not implemented** (see schema gap) |
-| **Ads / Taxi Assist Media** | Planned `ad_campaigns`, `ad_views` | rider (playback), admin (CRUD), analytics | **Not implemented** |
+| **Ads / Taxi Assist Media** | Planned `ad_campaigns`, `ad_views` (+ partner extensions per `trip_media_web` data model) | rider (playback), **trip_media_web** (partner CRUD), admin (moderation/takedown/analytics) | **Not implemented** |
+| **Partner billing (subscriptions)** | Payfast / Paystack via Edge Functions + `partner_subscriptions` (planned) | trip_media_web | **Not implemented** |
+| **Marketing leads (optional)** | Edge + `marketing_leads` or external CRM | trip_website | **Not implemented** |
 | **Support** | `public.support_tickets` | driver_app, admin_app, rider_app (planned) | **Partial** |
 | **Payouts** | `public.payouts` | driver_app, admin_app | **Partial** |
 | **Audit** | Planned `audit_logs` | admin_app only | **Not implemented** |

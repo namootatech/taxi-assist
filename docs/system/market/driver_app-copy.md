@@ -89,6 +89,16 @@ Avoid: “Workflow,” “module,” “backend verification queue.”
 
 ---
 
+## Implementation alignment (2026-05-08)
+
+Shared helpers:
+
+- `lib/core/utils/safe_text.dart` — `userFacingError()` for surfaces that previously showed raw exceptions.
+
+Screens touched for voice: onboarding gate, waiting approval, home dashboard, documents, marketing landing; auth: forgot password, OTP, login catch; go-online notifier.
+
+---
+
 ## Review checklist
 
 - [ ] Document states match admin workflow wording users will hear from support  

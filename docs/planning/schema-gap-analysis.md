@@ -11,6 +11,8 @@
 | **Driver prompts → APD 5-phase** | Low | Eight sequential prompts retained; see `drivers/prompts/INDEX.md` for mapping to foundation → deploy. |
 | **Platform PRD split** | Medium | Single `master-prd.md` / vision docs synthesized; reconcile with `supporting-documents/prd-overview.md` on next edit pass. |
 | **Rules vs filenames** | Low | Global `apd-rules.mdc` may reference `01-product-vision.md`; this repo uses **kebab-case** platform names—recorded in `docs/system/project-summary.md`. |
+| **Trip Media Web App** | Medium | **Planning done** (`docs/planning/trip_media_web/`). Remaining: migrations for `media_partners`, `partner_members`, `partner_subscriptions`, `ad_creatives`, `partner_billing_events`; extend `ad_campaigns` with `partner_id`; Edge Functions for Payfast/Paystack; `apps/trip_media_web` scaffold. See ADR 003. |
+| **Trip Website** | Low | **Planning done** (`docs/planning/trip_website/`). Remaining: `apps/trip_website`; optional `marketing_leads` + form Edge handler; content/marketing pass. |
 
 ### Rider app — implementation gaps (planning)
 
@@ -133,6 +135,22 @@ Missing tables:
 Key rule:
 
 - Reward credit only after **full watch + rating + comment** → model as `ad_views.state` with required fields, and only then allow wallet credit transaction.
+
+#### 5b) Partner media & billing (Trip Media Web — add with or after §5)
+
+Missing tables (planning detail in `trip_media_web/planning/data-model-and-app-entities.md`):
+
+- `public.media_partners`, `public.partner_members`, `public.ad_packages` (catalog)
+- `public.partner_subscriptions`, `public.partner_billing_events`
+- `public.ad_creatives` (partner-owned assets + moderation fields)
+
+Extensions:
+
+- `ad_campaigns.partner_id` (nullable during transition), links to `ad_creatives` / subscription for entitlement checks
+
+Edge:
+
+- Webhook handlers for **Payfast** (primary ZA) and optional **Paystack**; idempotent processing
 
 #### 6) Trip events / admin interventions (required)
 

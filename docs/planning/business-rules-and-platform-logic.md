@@ -9,6 +9,7 @@
 - **Document truth:** Each document has status, expiry, reviewer, timestamps; re-uploads versioned or auditable per admin spec.
 - **Trip payments:** Cash vs card vs app wallet vs hybrid affects **driver collection** instructions and **tip** rules (see rider notes: tips capped by wallet when applicable).
 - **Ads / rewards:** Partial watch or abandoned ad session **does not** count as completed; requires rating + comment to advance (rider narrative—must match eventual schema).
+- **Partner ads:** Partners may only deliver impressions through **approved** creatives and **active** subscriptions (or valid trial / positive **promotional credit** balance). **Campaign pause** on `past_due` or trial expiry per configurable grace—exact policy in `trip_media_web` implementation. Partner logic **must not** weaken rider completion rules for wallet credit.
 - **Admin power:** Suspensions, approvals, forced offline, financial adjustments require **reason** + **audit** once `audit_logs` exists (see `schema-gap-analysis.md`).
 
 ## Cross-cutting workflows

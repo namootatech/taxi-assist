@@ -10,9 +10,14 @@
     "schema-gap-analysis-canonical",
     "seed-data-moved-to-system",
     "rider-app-apd-six-pack-and-prompts-2026-05-08",
-    "adr-002-rider-app-docs"
+    "adr-002-rider-app-docs",
+    "trip-media-web-apd-six-pack-and-prompts-2026-05-08",
+    "trip-website-apd-six-pack-and-prompts-2026-05-08",
+    "adr-003-trip-media-partner-billing"
   ],
   "pending": [
+    "apps-trip-media-web-scaffold",
+    "apps-trip-website-scaffold",
     "apps-rider-app-scaffold",
     "expand-admin-user-flows-ui-stubs",
     "expand-driver-user-flows-ui-stubs",
@@ -23,7 +28,9 @@
   "apps": {
     "driver_app": "in-progress",
     "admin_app": "planning",
-    "rider_app": "planning"
+    "rider_app": "planning",
+    "trip_media_web": "planning",
+    "trip_website": "planning"
   },
-  "notes": "rider_app: full docs under docs/planning/rider_app/; no apps/rider_app yet. See docs/planning/adrs/002-rider-app-docs-and-stack.md."
+  "notes": "rider_app: full docs under docs/planning/rider_app/; no apps/rider_app yet. See docs/planning/adrs/002-rider-app-docs-and-stack.md. trip_media_web + trip_website: planning complete 2026-05-08; ADR 003 billing boundaries. driver_app + admin_app: UX copy passes 2026-05-08 — docs/system/market/drift-report.md."
 }

@@ -105,6 +105,13 @@ Optional: support reference ID **secondary**, not headline — “Reference: …
 
 ---
 
+## Implementation alignment (2026-05-08)
+
+- **`lib/user-facing-error.ts`** — canonical mapping for load failures, auth, and client mutation errors; use for new surfaces instead of `error.message`.
+- **Login banner** — shows decoded message from redirects (already normalized server-side).
+
+---
+
 ## Review checklist
 
 - [ ] RBAC-sensitive actions have explicit labels  

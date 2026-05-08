@@ -10,7 +10,9 @@ South Africa needs a **compliance-first, multi-sided ride-hailing platform** (Ta
 
 - **Riders** — book trips, pay, watch ads for credits, manage profile and safety (emergency contacts). **Planning:** `docs/planning/rider_app/`.
 - **Drivers & vehicle owners** — register vehicles and drivers, stay compliant, go online, complete trips, earn.
-- **Internal staff** — compliance, operations, finance, ad managers, support, super-admins (admin web app).
+- **Advertising partners** — self-serve campaigns and subscriptions via **Trip Media Web** (`docs/planning/trip_media_web/`).
+- **Public / prospects** — discover Trip, download apps, submit leads on the **Trip Website** (`docs/planning/trip_website/`).
+- **Internal staff** — compliance, operations, finance, ad managers (moderation, fraud, analytics—not full partner CRUD), support, super-admins (admin web app).
 
 ## Vision
 
