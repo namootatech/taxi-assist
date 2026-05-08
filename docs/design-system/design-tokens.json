@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "trip-platform",
+  "version": "1.0.0",
+  "generatedAt": "2026-05-08",
+  "apps": {
+    "trip_website": {
+      "surface": "marketing",
+      "globals": "apps/trip_website/app/globals.css"
+    },
+    "trip_media_web": {
+      "surface": "partner-portal",
+      "globals": "apps/trip_media_web/app/globals.css"
+    }
+  },
+  "color": {
+    "brand": {
+      "red": {
+        "value": "#fe0000",
+        "usage": "Primary CTAs, eyebrows, icon accents — high-visibility brand signal"
+      },
+      "navy": {
+        "value": "#244065",
+        "usage": "Marketing secondary actions, trust band background context, text on light surfaces"
+      }
+    },
+    "marketing": {
+      "background": "#fffaf4",
+      "foreground": "#122033",
+      "cream": "#fffaf4",
+      "sand": "#f4dec1",
+      "surface": "rgba(255, 255, 255, 0.86)",
+      "surfaceStrong": "#ffffff",
+      "border": "rgba(36, 64, 101, 0.16)",
+      "muted": "rgba(18, 32, 51, 0.66)"
+    },
+    "portal": {
+      "background": "#07111f",
+      "foreground": "#f8fafc",
+      "surface": "#0d1a2d",
+      "surface2": "#12233b",
+      "border": "rgba(248, 250, 252, 0.12)",
+      "muted": "rgba(248, 250, 252, 0.66)",
+      "success": "#47d18c"
+    },
+    "semantic": {
+      "focusRing": {
+        "marketing": "rgba(254, 0, 0, 0.45)",
+        "portal": "rgba(254, 0, 0, 0.48)"
+      }
+    }
+  },
+  "typography": {
+    "sans": {
+      "family": "\"Geist\", \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+      "source": "next/font/google Geist in layouts"
+    },
+    "mono": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", ui-monospace, monospace"
+    },
+    "weights": {
+      "display": 900,
+      "bodyStrong": 700,
+      "nav": 600
+    },
+    "tracking": {
+      "eyebrow": "0.22em to 0.28em uppercase"
+    },
+    "scale": {
+      "hero": "text-5xl md:text-7xl font-black tracking-[-0.06em]",
+      "sectionTitle": "text-3xl md:text-5xl font-black tracking-[-0.04em]",
+      "cardTitle": "text-2xl font-black",
+      "body": "text-lg leading-7 or leading-8",
+      "caption": "text-xs font-black uppercase tracking-[0.2em+]"
+    }
+  },
+  "spacing": {
+    "pageX": "px-5 md:px-8",
+    "sectionY": "py-12 py-16 md:py-20",
+    "gridGap": "gap-4 gap-8 gap-10",
+    "inferredBase": 4,
+    "notes": "Tailwind v4 spacing scale; layouts favor max-w-7xl (marketing) and max-w-6xl (portal)"
+  },
+  "radius": {
+    "pill": "rounded-full",
+    "card": "rounded-[1.5rem]",
+    "surface": "rounded-[2rem]",
+    "nested": "rounded-2xl rounded-3xl"
+  },
+  "elevation": {
+    "marketingHeroImage": "shadow from var(--shadow)",
+    "cta": "shadow-xl shadow-red-500/20",
+    "headerNavCta": "shadow-lg shadow-[rgba(36,64,101,0.18)]"
+  },
+  "effects": {
+    "bodyBackground": {
+      "marketing": "radial brand-red wash + vertical cream-to-white gradient",
+      "portal": "radial brand-red wash + deep navy vertical gradient"
+    },
+    "backdrop": "backdrop-blur-xl on sticky marketing header"
+  },
+  "motion": {
+    "scrollBehavior": "smooth on html (marketing site)"
+  },
+  "tailwind": {
+    "version": "v4",
+    "theme": "@theme inline mapping --color-background/--color-foreground and font tokens"
+  }
+}

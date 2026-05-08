@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="marketing">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trip Platform — design preview</title>
+    <style>
+      :root {
+        --brand-red: #fe0000;
+        --brand-navy: #244065;
+        --bg: #fffaf4;
+        --fg: #122033;
+        --surface: rgba(255, 255, 255, 0.86);
+        --border: rgba(36, 64, 101, 0.16);
+        --muted: rgba(18, 32, 51, 0.66);
+        --shadow: 0 24px 80px rgba(18, 32, 51, 0.14);
+        --focus: rgba(254, 0, 0, 0.45);
+        --font: "Geist", ui-sans-serif, system-ui, sans-serif;
+      }
+      html[data-theme="portal"] {
+        --bg: #07111f;
+        --fg: #f8fafc;
+        --surface: #0d1a2d;
+        --border: rgba(248, 250, 252, 0.12);
+        --muted: rgba(248, 250, 252, 0.66);
+        --shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+        --focus: rgba(254, 0, 0, 0.48);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: var(--font);
+        background: var(--bg);
+        color: var(--fg);
+        transition: background 0.2s ease, color 0.2s ease;
+      }
+      html[data-theme="marketing"] body {
+        background:
+          radial-gradient(circle at top left, rgba(254, 0, 0, 0.1), transparent 28rem),
+          linear-gradient(180deg, #fffaf4, #ffffff 58%);
+      }
+      html[data-theme="portal"] body {
+        background:
+          radial-gradient(circle at 20% 0%, rgba(254, 0, 0, 0.14), transparent 26rem),
+          linear-gradient(180deg, #07111f, #0a1220 70%);
+      }
+      .wrap {
+        max-width: 56rem;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 4rem;
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+      .toggle {
+        display: flex;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        overflow: hidden;
+      }
+      .toggle button {
+        border: 0;
+        background: transparent;
+        color: var(--fg);
+        font: inherit;
+        font-weight: 700;
+        font-size: 0.8rem;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+      }
+      .toggle button[aria-pressed="true"] {
+        background: var(--brand-red);
+        color: #fff;
+      }
+      h1 {
+        font-size: 1.5rem;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        margin: 0 0 0.5rem;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 0.95rem;
+        margin: 0 0 2rem;
+        max-width: 36rem;
+        line-height: 1.6;
+      }
+      section {
+        margin-bottom: 2.5rem;
+      }
+      section h2 {
+        font-size: 0.7rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.22em;
+        color: var(--muted);
+        margin: 0 0 1rem;
+      }
+      .swatches {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+        gap: 0.75rem;
+      }
+      .chip {
+        border-radius: 1rem;
+        border: 1px solid var(--border);
+        overflow: hidden;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+      .chip-swatch {
+        height: 3.5rem;
+      }
+      .chip-label {
+        padding: 0.5rem 0.65rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--muted);
+      }
+      .type-demo {
+        border-radius: 1.5rem;
+        border: 1px solid var(--border);
+        padding: 1.5rem;
+        background: var(--surface);
+      }
+      .eyebrow {
+        font-size: 0.75rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.28em;
+        color: var(--brand-red);
+        margin: 0 0 0.75rem;
+      }
+      .display {
+        font-size: clamp(2rem, 5vw, 2.75rem);
+        font-weight: 900;
+        line-height: 0.96;
+        letter-spacing: -0.06em;
+        margin: 0 0 0.75rem;
+      }
+      .body {
+        font-size: 1.05rem;
+        line-height: 1.65;
+        color: var(--muted);
+        margin: 0;
+        max-width: 32rem;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+        margin-top: 1.25rem;
+      }
+      .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        border-radius: 999px;
+        border: 0;
+        background: var(--brand-red);
+        color: #fff;
+        font: inherit;
+        font-size: 0.8rem;
+        font-weight: 900;
+        padding: 0.65rem 1.35rem;
+        cursor: pointer;
+        box-shadow: 0 12px 32px rgba(254, 0, 0, 0.25);
+      }
+      .btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        color: var(--fg);
+        font: inherit;
+        font-size: 0.8rem;
+        font-weight: 900;
+        padding: 0.65rem 1.35rem;
+        cursor: pointer;
+      }
+      html[data-theme="marketing"] .btn-secondary {
+        background: #fff;
+      }
+      html[data-theme="portal"] .btn-secondary {
+        background: transparent;
+      }
+      .focusable:focus-visible {
+        outline: 3px solid var(--focus);
+        outline-offset: 3px;
+      }
+      .card-grid {
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+        margin-top: 1rem;
+      }
+      .mini-card {
+        border-radius: 1.25rem;
+        border: 1px solid var(--border);
+        padding: 1rem;
+        background: var(--surface);
+      }
+      .mini-card h3 {
+        margin: 0.5rem 0 0.25rem;
+        font-size: 1rem;
+        font-weight: 900;
+      }
+      .mini-card p {
+        margin: 0;
+        font-size: 0.8rem;
+        line-height: 1.55;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="bar">
+        <div>
+          <h1>Trip Platform tokens</h1>
+          <p class="sub">Toggle matches <code>trip_website</code> (marketing) vs <code>trip_media_web</code> (portal) globals.</p>
+        </div>
+        <div class="toggle" role="group" aria-label="Theme">
+          <button type="button" id="btn-m" class="focusable" aria-pressed="true">Marketing</button>
+          <button type="button" id="btn-p" class="focusable" aria-pressed="false">Portal</button>
+        </div>
+      </div>
+
+      <section aria-labelledby="s-colors">
+        <h2 id="s-colors">Colour</h2>
+        <div class="swatches">
+          <div class="chip">
+            <div class="chip-swatch" style="background: #fe0000"></div>
+            <div class="chip-label">brand red</div>
+          </div>
+          <div class="chip">
+            <div class="chip-swatch" style="background: #244065"></div>
+            <div class="chip-label">brand navy</div>
+          </div>
+          <div class="chip">
+            <div class="chip-swatch" style="background: var(--bg); border-bottom: 1px solid var(--border)"></div>
+            <div class="chip-label">background</div>
+          </div>
+          <div class="chip">
+            <div class="chip-swatch" style="background: var(--fg)"></div>
+            <div class="chip-label">foreground</div>
+          </div>
+          <div class="chip">
+            <div class="chip-swatch" style="background: var(--surface)"></div>
+            <div class="chip-label">surface</div>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="s-type">
+        <h2 id="s-type">Typography</h2>
+        <div class="type-demo">
+          <p class="eyebrow">Trip / Taxi Assist</p>
+          <p class="display">Move safely. Earn clearly.</p>
+          <p class="body">South African ride-hailing with verified drivers and in-trip media. Geist sans at black weights for marketing voice.</p>
+          <div class="row">
+            <button type="button" class="btn-primary focusable">Primary CTA</button>
+            <button type="button" class="btn-secondary focusable">Secondary</button>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="s-cards">
+        <h2 id="s-cards">Cards</h2>
+        <div class="card-grid">
+          <article class="mini-card">
+            <span class="eyebrow" style="font-size: 0.65rem">For riders</span>
+            <h3>Book with confidence.</h3>
+            <p>Verification-first trips and transparent pricing narrative.</p>
+          </article>
+          <article class="mini-card">
+            <span class="eyebrow" style="font-size: 0.65rem">For partners</span>
+            <h3>Campaign clarity.</h3>
+            <p>Portal-density layout with bordered panels.</p>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const root = document.documentElement;
+      const btnM = document.getElementById("btn-m");
+      const btnP = document.getElementById("btn-p");
+      function setTheme(theme) {
+        root.setAttribute("data-theme", theme);
+        btnM.setAttribute("aria-pressed", theme === "marketing" ? "true" : "false");
+        btnP.setAttribute("aria-pressed", theme === "portal" ? "true" : "false");
+      }
+      btnM.addEventListener("click", function () {
+        setTheme("marketing");
+      });
+      btnP.addEventListener("click", function () {
+        setTheme("portal");
+      });
+    </script>
+  </body>
+</html>
