@@ -13,7 +13,11 @@
     "adr-002-rider-app-docs",
     "trip-media-web-apd-six-pack-and-prompts-2026-05-08",
     "trip-website-apd-six-pack-and-prompts-2026-05-08",
-    "adr-003-trip-media-partner-billing"
+    "adr-003-trip-media-partner-billing",
+    "admin-rbac-route-capability-gates-2026-05-08",
+    "driver-cancel-reason-enforcement-2026-05-08",
+    "admin-build-typecheck-fix-2026-05-08",
+    "apd-state-engine-sync-2026-05-08"
   ],
   "pending": [
     "apps-trip-media-web-scaffold",
@@ -23,14 +27,18 @@
     "expand-driver-user-flows-ui-stubs",
     "reconcile-prompts-to-five-apd-phases-optional",
     "align-global-apd-rules-numbered-vs-kebab-filenames",
-    "rider-trip-request-rls-and-rpc-migrations"
+    "rider-trip-request-rls-and-rpc-migrations",
+    "storage-bucket-privacy-hardening",
+    "trip-media-partner-billing-migrations-and-webhooks",
+    "admin-next-proxy-migration",
+    "replace-driver-placeholder-smoke-test"
   ],
   "apps": {
     "driver_app": "in-progress",
-    "admin_app": "planning",
+    "admin_app": "in-progress",
     "rider_app": "planning",
     "trip_media_web": "planning",
     "trip_website": "planning"
   },
-  "notes": "rider_app: full docs under docs/planning/rider_app/; no apps/rider_app yet. See docs/planning/adrs/002-rider-app-docs-and-stack.md. trip_media_web + trip_website: planning complete 2026-05-08; ADR 003 billing boundaries. driver_app + admin_app: UX copy passes 2026-05-08 — docs/system/market/drift-report.md."
+  "notes": "APD-State Engine 2026-05-08 refreshed docs/system/drift-report.md, project-summary.md, docs/planning/shared-services.md, and docs/planning/schema-gap-analysis.md. driver_app + admin_app are in progress with substantial code. rider_app, trip_media_web, and trip_website remain planning-only with no app folders. Remaining priority gaps: storage privacy hardening, rider trip request/location write paths, Trip Media partner billing/webhooks, admin Next proxy migration, and replacing the driver placeholder smoke test."
 }
