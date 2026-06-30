@@ -27,4 +27,4 @@
 **/.pub-cache/
 **/.pub/
 **/build/
-
+.cursor/
