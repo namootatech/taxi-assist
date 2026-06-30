@@ -28,3 +28,7 @@
 **/.pub/
 **/build/
 .cursor/
+
+# Supabase CLI local link/cache (do not commit)
+**/.temp/
+supabase/.branches/
