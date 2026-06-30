@@ -42,7 +42,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           );
       AppSentry.action('driver.login.auth_ok');
       await ref.read(currentDriverProvider.notifier).refresh();
-    } catch (e) {
+    } catch (e, st) {
       AppSentry.action(
         'driver.login.failed',
         data: {'errorType': e.runtimeType.toString()},
@@ -74,8 +74,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty)
+                    if (v == null || v.trim().isEmpty) {
                       return 'Enter your email';
+                    }
                     if (!v.contains('@')) return 'Enter a valid email';
                     return null;
                   },

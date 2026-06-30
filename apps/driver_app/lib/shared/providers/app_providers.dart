@@ -62,7 +62,6 @@ class CurrentDriverNotifier extends AutoDisposeAsyncNotifier<DriverProfile?> {
   }
 
   Future<void> refresh() async {
-    state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final uid = ref.read(supabaseClientProvider).auth.currentUser?.id;
       if (uid == null) return null;

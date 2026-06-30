@@ -155,6 +155,7 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
               labelText: 'Full name',
               border: OutlineInputBorder(),
             ),
+            onChanged: (_) => _persistDraftToNotifier(),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -163,6 +164,7 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
               labelText: 'ID number',
               border: OutlineInputBorder(),
             ),
+            onChanged: (_) => _persistDraftToNotifier(),
           ),
           const SizedBox(height: 12),
           ListTile(
@@ -201,6 +203,7 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
               labelText: 'Residential address',
               border: OutlineInputBorder(),
             ),
+            onChanged: (_) => _persistDraftToNotifier(),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -209,6 +212,7 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
               labelText: 'Driver license number',
               border: OutlineInputBorder(),
             ),
+            onChanged: (_) => _persistDraftToNotifier(),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -217,6 +221,7 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
               labelText: 'License code',
               border: OutlineInputBorder(),
             ),
+            onChanged: (_) => _persistDraftToNotifier(),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -225,6 +230,7 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
               labelText: 'PDP number (optional)',
               border: OutlineInputBorder(),
             ),
+            onChanged: (_) => _persistDraftToNotifier(),
           ),
           const SizedBox(height: 12),
           ListTile(
@@ -248,6 +254,7 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
               labelText: 'Account holder',
               border: OutlineInputBorder(),
             ),
+            onChanged: (_) => _persistDraftToNotifier(),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -256,6 +263,7 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
               labelText: 'Bank name',
               border: OutlineInputBorder(),
             ),
+            onChanged: (_) => _persistDraftToNotifier(),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -264,6 +272,7 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
               labelText: 'Account number',
               border: OutlineInputBorder(),
             ),
+            onChanged: (_) => _persistDraftToNotifier(),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -272,6 +281,7 @@ class _DriverPersonalStepState extends ConsumerState<DriverPersonalStep> {
               labelText: 'Branch code',
               border: OutlineInputBorder(),
             ),
+            onChanged: (_) => _persistDraftToNotifier(),
           ),
           const SizedBox(height: 24),
           Text('Documents', style: Theme.of(context).textTheme.titleMedium),

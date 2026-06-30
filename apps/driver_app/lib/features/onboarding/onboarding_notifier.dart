@@ -16,6 +16,7 @@ import 'onboarding_state.dart';
 final onboardingNotifierProvider =
     StateNotifierProvider.family<OnboardingNotifier, OnboardingState, String>(
         (ref, profileId) {
+  ref.keepAlive();
   // IMPORTANT: returning from Android pickers can cause auth/profile providers
   // to briefly rebuild/loading. We must not throw here, otherwise the onboarding
   // route rebuilds and the driver loses progress.

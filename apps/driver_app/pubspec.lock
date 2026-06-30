@@ -174,6 +174,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.3"
+  clerk_auth:
+    dependency: transitive
+    description:
+      name: clerk_auth
+      sha256: "98b762546a82c438e0ce4e9814b109af10a7ec7258d6fc4709df92fbb2865259"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.10-beta"
+  clerk_flutter:
+    dependency: "direct main"
+    description:
+      name: clerk_flutter
+      sha256: "8086552e8cc27760004827665a23aae1c5bf09b9d88b73b5b57ce03e867f821d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.10-beta"
   clock:
     dependency: transitive
     description:

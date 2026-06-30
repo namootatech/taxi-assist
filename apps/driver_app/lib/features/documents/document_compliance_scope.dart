@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../shared/models/driver_enums.dart';
 import '../../shared/providers/app_providers.dart';
+import '../auth/auth_routing.dart';
 import '../home/go_online_notifier.dart';
 import 'document_providers.dart';
 
@@ -67,6 +68,7 @@ class _DocumentComplianceScopeState extends ConsumerState<DocumentComplianceScop
   Future<void> _onDocumentSignal() async {
     if (!mounted) return;
     ref.invalidate(driverDocumentsProvider);
+    if (_isOnboardingWizard()) return;
     await ref.read(currentDriverProvider.notifier).refresh();
     if (!mounted) return;
     await _revalidateOnlineMaybeDialog();
@@ -77,9 +79,15 @@ class _DocumentComplianceScopeState extends ConsumerState<DocumentComplianceScop
     if (uid == null) return;
     if (!mounted) return;
     ref.invalidate(driverDocumentsProvider);
+    if (_isOnboardingWizard()) return;
     await ref.read(currentDriverProvider.notifier).refresh();
     if (!mounted) return;
     await _revalidateOnlineMaybeDialog();
+  }
+
+  bool _isOnboardingWizard() {
+    final profile = ref.read(currentDriverProvider).valueOrNull;
+    return resolveDestination(profile) == AuthDestination.onboardingWizard;
   }
 
   Future<void> _revalidateOnlineMaybeDialog() async {

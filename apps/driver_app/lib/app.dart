@@ -15,6 +15,7 @@ import 'features/onboarding/onboarding_gate_screen.dart';
 import 'features/onboarding/waiting_approval_screen.dart';
 import 'features/training/training_required_screen.dart';
 import 'features/documents/document_compliance_scope.dart';
+import 'shared/models/driver_profile.dart';
 import 'shared/providers/app_providers.dart';
 import 'shared/widgets/main_shell.dart';
 
@@ -64,6 +65,23 @@ class TaxiAssistDriverApp extends ConsumerWidget {
   }
 }
 
+Widget _profileDestination(DriverProfile? profile) {
+  final dest = resolveDestination(profile);
+  return switch (dest) {
+    AuthDestination.mainShell => const MainShell(),
+    AuthDestination.accountBlocked => AccountStatusScreen(profile: profile!),
+    AuthDestination.completeRegistration => const OnboardingGateScreen(
+        destination: AuthDestination.completeRegistration,
+      ),
+    AuthDestination.onboardingWizard => OnboardingFlowScreen(profile: profile!),
+    AuthDestination.onboardingAwaitingReview => const WaitingApprovalScreen(),
+    AuthDestination.onboardingLinkVehicle => const OnboardingGateScreen(
+        destination: AuthDestination.onboardingLinkVehicle,
+      ),
+    AuthDestination.trainingRequired => const TrainingRequiredScreen(),
+  };
+}
+
 class _AppHome extends ConsumerWidget {
   const _AppHome();
 
@@ -94,29 +112,14 @@ class _AppHome extends ConsumerWidget {
         }
 
         final profileAsync = ref.watch(currentDriverProvider);
+        // Keep the last known screen during background profile refresh (e.g. after
+        // file picker resume) so onboarding draft state is not torn down.
+        final cachedProfile = profileAsync.valueOrNull;
+        if (cachedProfile != null) {
+          return _profileDestination(cachedProfile);
+        }
         return profileAsync.when(
-          data: (profile) {
-            final dest = resolveDestination(profile);
-            return switch (dest) {
-              AuthDestination.mainShell => const MainShell(),
-              AuthDestination.accountBlocked =>
-                AccountStatusScreen(profile: profile!),
-              AuthDestination.completeRegistration =>
-                const OnboardingGateScreen(
-                  destination: AuthDestination.completeRegistration,
-                ),
-              AuthDestination.onboardingWizard =>
-                OnboardingFlowScreen(profile: profile!),
-              AuthDestination.onboardingAwaitingReview =>
-                const WaitingApprovalScreen(),
-              AuthDestination.onboardingLinkVehicle =>
-                const OnboardingGateScreen(
-                  destination: AuthDestination.onboardingLinkVehicle,
-                ),
-              AuthDestination.trainingRequired =>
-                const TrainingRequiredScreen(),
-            };
-          },
+          data: (profile) => _profileDestination(profile),
           loading: () => const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           ),

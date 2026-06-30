@@ -345,6 +345,7 @@ class _VehicleStepState extends ConsumerState<VehicleStep> {
             title: 'Front',
             path: st.vehiclePhotoFrontPath,
             onPick: () async {
+              _syncDraftFromControllers();
               final p = await pickImageFromSheet(context);
               if (p != null) n.setVehiclePhotoFrontPath(p);
             },
@@ -355,6 +356,7 @@ class _VehicleStepState extends ConsumerState<VehicleStep> {
             title: 'Left',
             path: st.vehiclePhotoLeftPath,
             onPick: () async {
+              _syncDraftFromControllers();
               final p = await pickImageFromSheet(context);
               if (p != null) n.setVehiclePhotoLeftPath(p);
             },
@@ -365,6 +367,7 @@ class _VehicleStepState extends ConsumerState<VehicleStep> {
             title: 'Right',
             path: st.vehiclePhotoRightPath,
             onPick: () async {
+              _syncDraftFromControllers();
               final p = await pickImageFromSheet(context);
               if (p != null) n.setVehiclePhotoRightPath(p);
             },
@@ -375,6 +378,7 @@ class _VehicleStepState extends ConsumerState<VehicleStep> {
             title: 'Rear',
             path: st.vehiclePhotoRearPath,
             onPick: () async {
+              _syncDraftFromControllers();
               final p = await pickImageFromSheet(context);
               if (p != null) n.setVehiclePhotoRearPath(p);
             },
@@ -385,6 +389,7 @@ class _VehicleStepState extends ConsumerState<VehicleStep> {
             title: 'Speedometer',
             path: st.vehiclePhotoSpeedoPath,
             onPick: () async {
+              _syncDraftFromControllers();
               final p = await pickImageFromSheet(context);
               if (p != null) n.setVehiclePhotoSpeedoPath(p);
             },
@@ -398,6 +403,7 @@ class _VehicleStepState extends ConsumerState<VehicleStep> {
             title: 'NATIS (photo/PDF)',
             path: st.natisPath,
             onPick: () async {
+              _syncDraftFromControllers();
               final p = await pickRegistrationFile();
               if (p != null) n.setNatisPath(p);
             },
@@ -408,6 +414,7 @@ class _VehicleStepState extends ConsumerState<VehicleStep> {
             title: 'Double disc (photo/PDF)',
             path: st.doubleDiscPath,
             onPick: () async {
+              _syncDraftFromControllers();
               final p = await pickRegistrationFile();
               if (p != null) n.setDoubleDiscPath(p);
             },
@@ -433,6 +440,7 @@ class _VehicleStepState extends ConsumerState<VehicleStep> {
             title: 'Insurance (photo/PDF)',
             path: st.insurancePath,
             onPick: () async {
+              _syncDraftFromControllers();
               final p = await pickRegistrationFile();
               if (p != null) n.setInsurancePath(p);
             },
@@ -459,6 +467,7 @@ class _VehicleStepState extends ConsumerState<VehicleStep> {
               title: 'CK document',
               path: st.ckPath,
               onPick: () async {
+                _syncDraftFromControllers();
                 final p = await pickRegistrationFile();
                 if (p != null) n.setCkPath(p);
               },
@@ -469,6 +478,7 @@ class _VehicleStepState extends ConsumerState<VehicleStep> {
               title: 'Director approval',
               path: st.directorApprovalPath,
               onPick: () async {
+                _syncDraftFromControllers();
                 final p = await pickRegistrationFile();
                 if (p != null) n.setDirectorApprovalPath(p);
               },
