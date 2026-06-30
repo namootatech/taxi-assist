@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { campaignDraftSchema } from '@/lib/campaign/schema';
 import { getPartnerContext } from '@/lib/partner';
 import { canManageCampaigns } from '@/lib/permissions';
+import { buildBillingReturnUrl } from '@/lib/payfast/payment-ref';
 import { buildPayfastSignature } from '@/lib/payfast/signature';
 import {
   logActionError,
@@ -100,13 +101,18 @@ export async function initiateCampaignPayment(campaignId: string) {
   const payment = data as {
     amount_cents: number;
     m_payment_id: string;
+    payment_id: string;
   };
 
   const fields = {
     merchant_id: merchantId,
     merchant_key: merchantKey,
-    return_url: `${siteUrl}/dashboard/campaigns/${campaignId}?checkout=return`,
-    cancel_url: `${siteUrl}/dashboard/campaigns/${campaignId}?checkout=cancelled`,
+    return_url: buildBillingReturnUrl(siteUrl, {
+      campaignId,
+      paymentId: payment.payment_id,
+      kind: 'initial',
+    }),
+    cancel_url: `${siteUrl}/dashboard/billing?checkout=cancelled&campaign=${campaignId}&payment=${payment.payment_id}`,
     notify_url: `${siteUrl}/api/payfast-webhook`,
     m_payment_id: payment.m_payment_id,
     amount: (payment.amount_cents / 100).toFixed(2),
@@ -136,12 +142,16 @@ export async function initiateImpressionTopup(campaignId: string, impressions: n
     redirect(`/dashboard/campaigns/${campaignId}?error=topup_failed`);
   }
 
-  const payment = data as { amount_cents: number; m_payment_id: string };
+  const payment = data as { amount_cents: number; m_payment_id: string; payment_id: string };
   const fields = {
     merchant_id: merchantId,
     merchant_key: merchantKey,
-    return_url: `${siteUrl}/dashboard/campaigns/${campaignId}?checkout=topup_return`,
-    cancel_url: `${siteUrl}/dashboard/campaigns/${campaignId}?checkout=cancelled`,
+    return_url: buildBillingReturnUrl(siteUrl, {
+      campaignId,
+      paymentId: payment.payment_id,
+      kind: 'topup',
+    }),
+    cancel_url: `${siteUrl}/dashboard/billing?checkout=cancelled&campaign=${campaignId}&payment=${payment.payment_id}`,
     notify_url: `${siteUrl}/api/payfast-webhook`,
     m_payment_id: payment.m_payment_id,
     amount: (payment.amount_cents / 100).toFixed(2),

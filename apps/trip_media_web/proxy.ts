@@ -36,7 +36,8 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
-    loginUrl.searchParams.set('next', request.nextUrl.pathname);
+    const returnPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+    loginUrl.searchParams.set('next', returnPath);
     return NextResponse.redirect(loginUrl);
   }
 

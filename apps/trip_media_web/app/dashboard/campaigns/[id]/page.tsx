@@ -50,6 +50,17 @@ export default async function CampaignDetailPage({
 
   if (!campaign) redirect('/dashboard/campaigns');
 
+  if (query.checkout === 'return' || query.checkout === 'topup_return') {
+    const latestPayment = (payments ?? []).find((p) =>
+      query.checkout === 'topup_return' ? p.payment_kind === 'topup' : p.payment_kind === 'initial',
+    );
+    if (latestPayment) {
+      redirect(
+        `/dashboard/billing?checkout=${query.checkout}&campaign=${id}&payment=${latestPayment.id}`,
+      );
+    }
+  }
+
   const purchased =
     (campaign.impressions_purchased ?? campaign.max_views ?? 0) + (campaign.impressions_bonus ?? 0);
   const used = campaign.impressions_used ?? campaign.current_views ?? 0;
@@ -71,9 +82,9 @@ export default async function CampaignDetailPage({
         <p className='text-sm text-slate-300'>
           {pkg?.name ?? '—'} · {campaign.status.replace(/_/g, ' ').toLowerCase()}
         </p>
-        {query.checkout === 'return' ? (
-          <p className='rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-100'>
-            Payment received. Submit for review when you are ready.
+        {query.checkout === 'cancelled' ? (
+          <p className='rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-2 text-sm text-amber-100'>
+            Checkout was cancelled. You can try payment again when you are ready.
           </p>
         ) : null}
         {query.error ? (
