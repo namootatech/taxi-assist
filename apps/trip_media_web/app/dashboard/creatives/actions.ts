@@ -18,9 +18,9 @@ export interface CreativeActionResult {
 }
 
 const createSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().uuid().optional(),
   storage_path: z.string().min(3),
-  mime_type: z.enum(['image/png', 'image/jpeg', 'video/mp4']),
+  mime_type: z.enum(['image/png', 'image/jpeg', 'video/mp4', 'video/quicktime']),
   duration_seconds: z.number().int().nonnegative().optional(),
   title: z.string().trim().min(2),
   cta_url: z.string().trim().url().optional().or(z.literal('')),
@@ -60,8 +60,9 @@ export async function createCreative(
   }
 
   const supabase = await createSupabaseServerClient();
+  const creativeId = parsed.data.id ?? crypto.randomUUID();
   const { error } = await supabase.from('ad_creatives').insert({
-    id: parsed.data.id,
+    id: creativeId,
     partner_id: context.partner.id,
     title: parsed.data.title,
     cta_url: parsed.data.cta_url || null,

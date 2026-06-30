@@ -1,9 +1,12 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { campaignDraftSchema } from '@/lib/campaign/schema';
 import { getPartnerContext } from '@/lib/partner';
 import { canManageCampaigns } from '@/lib/permissions';
+import { buildPayfastSignature } from '@/lib/payfast/signature';
 import {
   logActionError,
   logActionInfo,
@@ -15,101 +18,216 @@ export interface CampaignActionResult {
   success: boolean;
   message?: string;
   campaignId?: string;
+  pricing?: Record<string, unknown>;
 }
-
-const createSchema = z.object({
-  advertiser: z.string().trim().min(2),
-  creative_id: z.string().uuid(),
-  schedule_band: z.enum(['peak', 'off_peak', 'all_day', 'night', 'all']),
-  max_views: z.coerce.number().int().positive().max(1_000_000),
-  reward_per_view: z.coerce.number().min(0).max(100).default(0),
-  start_date: z.string().optional().or(z.literal('')),
-  end_date: z.string().optional().or(z.literal('')),
-});
 
 const idSchema = z.object({ campaignId: z.string().uuid() });
 
-export async function createCampaign(
+function payfastConfig() {
+  const merchantId = process.env.PAYFAST_MERCHANT_ID;
+  const merchantKey = process.env.PAYFAST_MERCHANT_KEY;
+  const passphrase = process.env.PAYFAST_PASSPHRASE;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const payfastUrl =
+    process.env.PAYFAST_CHECKOUT_URL ||
+    'https://sandbox.payfast.co.za/eng/process';
+  return { merchantId, merchantKey, passphrase, siteUrl, payfastUrl };
+}
+
+export async function saveCampaignDraft(
   input: unknown,
 ): Promise<CampaignActionResult> {
-  logActionInfo('trip_media.campaigns.create', 'started');
   const context = await getPartnerContext();
-
   if (!context)
-    return {
-      success: false,
-      message: 'Open the dashboard from a partner workspace first.',
-    };
-  if (!canManageCampaigns(context.member.role)) {
-    return {
-      success: false,
-      message: 'Only owners, admins, and operators can create campaigns.',
-    };
-  }
+    return { success: false, message: 'Open the dashboard from a partner workspace first.' };
+  if (!canManageCampaigns(context.member.role))
+    return { success: false, message: 'Only owners, admins, and operators can create campaigns.' };
 
-  const parsed = createSchema.safeParse(input);
-  if (!parsed.success) {
-    logActionWarn('trip_media.campaigns.create', 'validation_failed', {
-      issues: parsed.error.issues.map((issue) => issue.path.join('.')),
-    });
-    return {
-      success: false,
-      message: parsed.error.issues[0]?.message ?? 'Check the campaign fields.',
-    };
-  }
+  const parsed = campaignDraftSchema.safeParse(input);
+  if (!parsed.success)
+    return { success: false, message: parsed.error.issues[0]?.message ?? 'Check the campaign fields.' };
 
   const supabase = await createSupabaseServerClient();
-  const { data: creative } = await supabase
-    .from('ad_creatives')
-    .select('id, status, storage_path')
-    .eq('id', parsed.data.creative_id)
+  const { data, error } = await supabase.rpc('partner_save_campaign_draft', {
+    p_campaign_id: parsed.data.campaign_id ?? null,
+    p_partner_id: context.partner.id,
+    p_advertiser: parsed.data.advertiser,
+    p_company_name: parsed.data.company_name,
+    p_package_id: parsed.data.package_id,
+    p_impressions: parsed.data.impressions,
+    p_creative_id: parsed.data.creative_id ?? null,
+    p_start_date: parsed.data.start_date,
+    p_end_date: parsed.data.end_date || null,
+    p_destination_type: parsed.data.destination_type ?? null,
+    p_destination_value: parsed.data.destination_value ?? null,
+    p_campaign_notes: parsed.data.campaign_notes ?? null,
+    p_custom_requirements: parsed.data.custom_requirements ?? null,
+  });
+
+  if (error) {
+    logActionError('trip_media.campaigns.save_draft', 'rpc_failed', error);
+    return { success: false, message: 'Could not save that campaign draft.' };
+  }
+
+  const result = data as { ok?: boolean; error?: string; campaign_id?: string; pricing?: Record<string, unknown> };
+  if (!result?.ok)
+    return { success: false, message: result?.error ?? 'Could not save draft.' };
+
+  revalidatePath('/dashboard/campaigns');
+  return { success: true, campaignId: result.campaign_id, pricing: result.pricing };
+}
+
+export async function initiateCampaignPayment(campaignId: string) {
+  const context = await getPartnerContext();
+  if (!context) redirect('/signup?setup=partner&next=/dashboard/campaigns');
+
+  const { merchantId, merchantKey, passphrase, siteUrl, payfastUrl } = payfastConfig();
+  if (!merchantId || !merchantKey)
+    redirect(`/dashboard/campaigns/${campaignId}?error=payfast_not_ready`);
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc('partner_prepare_campaign_payment', {
+    p_campaign_id: campaignId,
+    p_partner_id: context.partner.id,
+    p_payment_kind: 'initial',
+  });
+
+  if (error || !data?.ok) {
+    logActionError('trip_media.campaigns.payment', 'prepare_failed', error);
+    redirect(`/dashboard/campaigns/${campaignId}?error=payment_prepare_failed`);
+  }
+
+  const payment = data as {
+    amount_cents: number;
+    m_payment_id: string;
+  };
+
+  const fields = {
+    merchant_id: merchantId,
+    merchant_key: merchantKey,
+    return_url: `${siteUrl}/dashboard/campaigns/${campaignId}?checkout=return`,
+    cancel_url: `${siteUrl}/dashboard/campaigns/${campaignId}?checkout=cancelled`,
+    notify_url: `${siteUrl}/api/payfast-webhook`,
+    m_payment_id: payment.m_payment_id,
+    amount: (payment.amount_cents / 100).toFixed(2),
+    item_name: 'Trip Media campaign',
+  };
+
+  const signature = buildPayfastSignature(fields, passphrase);
+  redirect(`${payfastUrl}?${new URLSearchParams({ ...fields, signature }).toString()}`);
+}
+
+export async function initiateImpressionTopup(campaignId: string, impressions: number) {
+  const context = await getPartnerContext();
+  if (!context) redirect('/signup?setup=partner&next=/dashboard/campaigns');
+
+  const { merchantId, merchantKey, passphrase, siteUrl, payfastUrl } = payfastConfig();
+  if (!merchantId || !merchantKey)
+    redirect(`/dashboard/campaigns/${campaignId}?error=payfast_not_ready`);
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc('partner_add_campaign_impressions', {
+    p_campaign_id: campaignId,
+    p_partner_id: context.partner.id,
+    p_impressions: impressions,
+  });
+
+  if (error || !data?.ok) {
+    redirect(`/dashboard/campaigns/${campaignId}?error=topup_failed`);
+  }
+
+  const payment = data as { amount_cents: number; m_payment_id: string };
+  const fields = {
+    merchant_id: merchantId,
+    merchant_key: merchantKey,
+    return_url: `${siteUrl}/dashboard/campaigns/${campaignId}?checkout=topup_return`,
+    cancel_url: `${siteUrl}/dashboard/campaigns/${campaignId}?checkout=cancelled`,
+    notify_url: `${siteUrl}/api/payfast-webhook`,
+    m_payment_id: payment.m_payment_id,
+    amount: (payment.amount_cents / 100).toFixed(2),
+    item_name: 'Trip Media impression top-up',
+  };
+
+  const signature = buildPayfastSignature(fields, passphrase);
+  redirect(`${payfastUrl}?${new URLSearchParams({ ...fields, signature }).toString()}`);
+}
+
+export async function submitCampaignForReview(
+  input: unknown,
+): Promise<CampaignActionResult> {
+  const context = await getPartnerContext();
+  if (!context)
+    return { success: false, message: 'Open the dashboard from a partner workspace first.' };
+  if (!canManageCampaigns(context.member.role))
+    return { success: false, message: 'Only owners, admins, and operators can submit campaigns.' };
+
+  const parsed = idSchema.safeParse(input);
+  if (!parsed.success)
+    return { success: false, message: 'Invalid campaign reference.' };
+
+  const supabase = await createSupabaseServerClient();
+  const { data: campaign } = await supabase
+    .from('ad_campaigns')
+    .select(
+      'status, payment_status, creative:ad_creatives!ad_campaigns_creative_id_fkey(status)',
+    )
+    .eq('campaign_id', parsed.data.campaignId)
     .eq('partner_id', context.partner.id)
     .maybeSingle();
 
-  if (!creative) {
-    return { success: false, message: 'Pick one of your creatives.' };
-  }
+  if (!campaign) return { success: false, message: 'Campaign not found.' };
+  if (!['DRAFT', 'REJECTED'].includes(campaign.status))
+    return { success: false, message: 'Only drafts or rejected campaigns can be submitted.' };
+  if (campaign.payment_status !== 'paid')
+    return { success: false, message: 'Complete payment before submitting for review.' };
 
-  const credits = context.partner.promotional_credits_balance;
-  if (credits > 0 && parsed.data.max_views > credits) {
-    return {
-      success: false,
-      message: `View cap (${parsed.data.max_views}) exceeds your remaining credits (${credits}). Lower the cap or top up.`,
-    };
-  }
+  const creative = Array.isArray(campaign.creative)
+    ? campaign.creative[0]
+    : campaign.creative;
+  if (!creative || creative.status !== 'approved')
+    return { success: false, message: 'Linked creative must be approved before submission.' };
 
-  const { data: inserted, error } = await supabase
+  const { error } = await supabase
     .from('ad_campaigns')
-    .insert({
-      advertiser: parsed.data.advertiser,
-      partner_id: context.partner.id,
-      creative_id: parsed.data.creative_id,
-      video_path:
-        creative.storage_path || `partner://${parsed.data.creative_id}`,
-      target_json: { schedule_band: parsed.data.schedule_band },
-      max_views: parsed.data.max_views,
-      impression_cap: parsed.data.max_views,
-      reward_per_view: parsed.data.reward_per_view,
-      schedule_band: parsed.data.schedule_band,
-      start_date: parsed.data.start_date || null,
-      end_date: parsed.data.end_date || null,
-      status: 'DRAFT',
+    .update({
+      status: 'PENDING_REVIEW',
+      submitted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
-    .select('campaign_id')
-    .maybeSingle();
+    .eq('campaign_id', parsed.data.campaignId)
+    .eq('partner_id', context.partner.id);
 
-  if (error || !inserted) {
-    logActionError('trip_media.campaigns.create', 'insert_failed', error, {
-      partnerId: context.partner.id,
-    });
-    return { success: false, message: 'Could not save that campaign.' };
+  if (error) {
+    logActionError('trip_media.campaigns.submit', 'update_failed', error);
+    return { success: false, message: 'Could not submit that campaign.' };
   }
 
-  logActionInfo('trip_media.campaigns.create', 'completed', {
-    partnerId: context.partner.id,
-  });
   revalidatePath('/dashboard/campaigns');
-  return { success: true, campaignId: inserted.campaign_id };
+  revalidatePath(`/dashboard/campaigns/${parsed.data.campaignId}`);
+  return { success: true };
+}
+
+export async function requestCampaignCancellation(
+  campaignId: string,
+  reason: string,
+): Promise<CampaignActionResult> {
+  const context = await getPartnerContext();
+  if (!context) return { success: false, message: 'Not signed in.' };
+  if (!canManageCampaigns(context.member.role))
+    return { success: false, message: 'Not authorized.' };
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc('partner_request_campaign_cancellation', {
+    p_campaign_id: campaignId,
+    p_partner_id: context.partner.id,
+    p_reason: reason,
+  });
+
+  if (error || !data?.ok)
+    return { success: false, message: 'Could not request cancellation.' };
+
+  revalidatePath(`/dashboard/campaigns/${campaignId}`);
+  return { success: true };
 }
 
 async function updateCampaignStatus(
@@ -124,201 +242,60 @@ async function updateCampaignStatus(
     .update({ status: next, updated_at: new Date().toISOString(), ...extra })
     .eq('campaign_id', campaignId)
     .eq('partner_id', context.partner.id);
-
   return error;
 }
 
-export async function submitCampaignForReview(
-  input: unknown,
-): Promise<CampaignActionResult> {
+export async function pauseCampaign(input: unknown): Promise<CampaignActionResult> {
   const context = await getPartnerContext();
-  if (!context)
-    return {
-      success: false,
-      message: 'Open the dashboard from a partner workspace first.',
-    };
-  if (!canManageCampaigns(context.member.role)) {
-    return {
-      success: false,
-      message: 'Only owners, admins, and operators can submit campaigns.',
-    };
-  }
+  if (!context) return { success: false, message: 'Not signed in.' };
+  if (!canManageCampaigns(context.member.role))
+    return { success: false, message: 'Not authorized.' };
 
   const parsed = idSchema.safeParse(input);
-  if (!parsed.success)
-    return { success: false, message: 'Invalid campaign reference.' };
+  if (!parsed.success) return { success: false, message: 'Invalid campaign reference.' };
 
-  const supabase = await createSupabaseServerClient();
-  const { data: campaign } = await supabase
-    .from('ad_campaigns')
-    .select(
-      'status, creative:ad_creatives!ad_campaigns_creative_id_fkey(status)',
-    )
-    .eq('campaign_id', parsed.data.campaignId)
-    .eq('partner_id', context.partner.id)
-    .maybeSingle();
-
-  if (!campaign) return { success: false, message: 'Campaign not found.' };
-  if (!['DRAFT', 'REJECTED'].includes(campaign.status)) {
-    return {
-      success: false,
-      message: 'Only drafts or rejected campaigns can be submitted.',
-    };
-  }
-
-  const creative = Array.isArray(campaign.creative)
-    ? campaign.creative[0]
-    : campaign.creative;
-  if (!creative || creative.status !== 'approved') {
-    return {
-      success: false,
-      message:
-        'Linked creative must be approved before this campaign can be submitted.',
-    };
-  }
-
-  const error = await updateCampaignStatus(
-    context,
-    parsed.data.campaignId,
-    'PENDING_REVIEW',
-    {
-      submitted_at: new Date().toISOString(),
-    },
-  );
-  if (error) {
-    logActionError('trip_media.campaigns.submit', 'update_failed', error, {
-      partnerId: context.partner.id,
-    });
-    return { success: false, message: 'Could not submit that campaign.' };
-  }
+  const error = await updateCampaignStatus(context, parsed.data.campaignId, 'PAUSED');
+  if (error) return { success: false, message: 'Could not pause that campaign.' };
 
   revalidatePath('/dashboard/campaigns');
   return { success: true };
 }
 
-export async function pauseCampaign(
-  input: unknown,
-): Promise<CampaignActionResult> {
+export async function resumeCampaign(input: unknown): Promise<CampaignActionResult> {
   const context = await getPartnerContext();
-  if (!context)
-    return {
-      success: false,
-      message: 'Open the dashboard from a partner workspace first.',
-    };
-  if (!canManageCampaigns(context.member.role)) {
-    return {
-      success: false,
-      message: 'Only owners, admins, and operators can pause campaigns.',
-    };
-  }
+  if (!context) return { success: false, message: 'Not signed in.' };
+  if (!canManageCampaigns(context.member.role))
+    return { success: false, message: 'Not authorized.' };
 
   const parsed = idSchema.safeParse(input);
-  if (!parsed.success)
-    return { success: false, message: 'Invalid campaign reference.' };
+  if (!parsed.success) return { success: false, message: 'Invalid campaign reference.' };
 
-  const error = await updateCampaignStatus(
-    context,
-    parsed.data.campaignId,
-    'PAUSED',
-  );
-  if (error) {
-    logActionError('trip_media.campaigns.pause', 'update_failed', error, {
-      partnerId: context.partner.id,
-    });
-    return { success: false, message: 'Could not pause that campaign.' };
-  }
+  const error = await updateCampaignStatus(context, parsed.data.campaignId, 'ACTIVE', {
+    activated_at: new Date().toISOString(),
+  });
+  if (error) return { success: false, message: 'Could not resume that campaign.' };
 
   revalidatePath('/dashboard/campaigns');
   return { success: true };
 }
 
-export async function resumeCampaign(
-  input: unknown,
-): Promise<CampaignActionResult> {
+export async function endCampaign(input: unknown): Promise<CampaignActionResult> {
   const context = await getPartnerContext();
-  if (!context)
-    return {
-      success: false,
-      message: 'Open the dashboard from a partner workspace first.',
-    };
-  if (!canManageCampaigns(context.member.role)) {
-    return {
-      success: false,
-      message: 'Only owners, admins, and operators can resume campaigns.',
-    };
-  }
+  if (!context) return { success: false, message: 'Not signed in.' };
+  if (!canManageCampaigns(context.member.role))
+    return { success: false, message: 'Not authorized.' };
 
   const parsed = idSchema.safeParse(input);
-  if (!parsed.success)
-    return { success: false, message: 'Invalid campaign reference.' };
+  if (!parsed.success) return { success: false, message: 'Invalid campaign reference.' };
 
-  const supabase = await createSupabaseServerClient();
-  const { data: subscription } = await supabase
-    .from('partner_subscriptions')
-    .select('status')
-    .eq('partner_id', context.partner.id)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (subscription?.status === 'past_due') {
-    return {
-      success: false,
-      message: 'Resolve the past-due subscription before resuming campaigns.',
-    };
-  }
-
-  const error = await updateCampaignStatus(
-    context,
-    parsed.data.campaignId,
-    'ACTIVE',
-    {
-      activated_at: new Date().toISOString(),
-    },
-  );
-  if (error) {
-    logActionError('trip_media.campaigns.resume', 'update_failed', error, {
-      partnerId: context.partner.id,
-    });
-    return { success: false, message: 'Could not resume that campaign.' };
-  }
+  const error = await updateCampaignStatus(context, parsed.data.campaignId, 'COMPLETED');
+  if (error) return { success: false, message: 'Could not end that campaign.' };
 
   revalidatePath('/dashboard/campaigns');
   return { success: true };
 }
 
-export async function endCampaign(
-  input: unknown,
-): Promise<CampaignActionResult> {
-  const context = await getPartnerContext();
-  if (!context)
-    return {
-      success: false,
-      message: 'Open the dashboard from a partner workspace first.',
-    };
-  if (!canManageCampaigns(context.member.role)) {
-    return {
-      success: false,
-      message: 'Only owners, admins, and operators can end campaigns.',
-    };
-  }
-
-  const parsed = idSchema.safeParse(input);
-  if (!parsed.success)
-    return { success: false, message: 'Invalid campaign reference.' };
-
-  const error = await updateCampaignStatus(
-    context,
-    parsed.data.campaignId,
-    'COMPLETED',
-  );
-  if (error) {
-    logActionError('trip_media.campaigns.end', 'update_failed', error, {
-      partnerId: context.partner.id,
-    });
-    return { success: false, message: 'Could not end that campaign.' };
-  }
-
-  revalidatePath('/dashboard/campaigns');
-  return { success: true };
+/** @deprecated Use saveCampaignDraft */
+export async function createCampaign(input: unknown): Promise<CampaignActionResult> {
+  return saveCampaignDraft(input);
 }

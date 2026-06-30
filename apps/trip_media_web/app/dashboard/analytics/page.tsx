@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { Activity, BarChart3, Clock4, FileVideo } from 'lucide-react';
+import { Activity, BarChart3, MessageSquare, MousePointerClick } from 'lucide-react';
 import { getPartnerContext } from '@/lib/partner';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
@@ -7,333 +7,149 @@ export const dynamic = 'force-dynamic';
 
 const NUM = new Intl.NumberFormat('en-ZA', { maximumFractionDigits: 0 });
 
-const SCHEDULE_LABEL: Record<string, string> = {
-  peak: 'Peak hours',
-  off_peak: 'Off-peak',
-  all_day: 'All day',
-  night: 'Night',
-  all: 'Any time',
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: 'Draft',
-  PENDING_REVIEW: 'Pending review',
-  ACTIVE: 'Active',
-  PAUSED: 'Paused',
-  COMPLETED: 'Completed',
-  ENDED: 'Ended',
-  REJECTED: 'Rejected',
-};
-
-interface CreativeStat {
-  id: string;
-  title: string;
-  delivered: number;
-  campaignCount: number;
-}
-
-interface ScheduleStat {
-  band: string;
-  delivered: number;
-  campaigns: number;
-}
-
 export default async function AnalyticsPage() {
   const context = await getPartnerContext();
-  if (!context) {
-    redirect('/signup?setup=partner&next=/dashboard/analytics');
-  }
+  if (!context) redirect('/signup?setup=partner&next=/dashboard/analytics');
 
   const supabase = await createSupabaseServerClient();
-  const [{ data: campaigns }, { data: creatives }] = await Promise.all([
+  const campaignIds =
+    (
+      await supabase.from('ad_campaigns').select('campaign_id').eq('partner_id', context.partner.id)
+    ).data?.map((c) => c.campaign_id) ?? [];
+
+  const [{ data: campaigns }, { count: clickCount }, { data: ratedViews }] = await Promise.all([
     supabase
       .from('ad_campaigns')
       .select(
-        'campaign_id, advertiser, status, current_views, max_views, schedule_band, start_date, end_date, creative_id',
+        'campaign_id, advertiser, status, impressions_purchased, impressions_bonus, impressions_used, current_views, max_views, package:ad_packages(name)',
       )
       .eq('partner_id', context.partner.id)
       .order('created_at', { ascending: false }),
     supabase
-      .from('ad_creatives')
-      .select('id, title, status')
+      .from('ad_click_events')
+      .select('id', { count: 'exact', head: true })
       .eq('partner_id', context.partner.id),
+    campaignIds.length
+      ? supabase
+          .from('ad_views')
+          .select('rating, comment, campaign_id, created_at')
+          .in('campaign_id', campaignIds)
+          .not('rating', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(20)
+      : Promise.resolve({ data: [] as Array<{ rating: number | null; comment: string | null; campaign_id: string; created_at: string }> }),
   ]);
 
-  const totalDelivered = (campaigns ?? []).reduce(
-    (acc, c) => acc + (c.current_views ?? 0),
+  const rows = campaigns ?? [];
+  const purchased = rows.reduce(
+    (acc, c) => acc + (c.impressions_purchased ?? c.max_views ?? 0) + (c.impressions_bonus ?? 0),
     0,
   );
-  const totalCap = (campaigns ?? []).reduce(
-    (acc, c) => acc + (c.max_views ?? 0),
-    0,
-  );
-  const overallCompletion =
-    totalCap > 0 ? Math.min(1, totalDelivered / totalCap) : 0;
+  const used = rows.reduce((acc, c) => acc + (c.impressions_used ?? c.current_views ?? 0), 0);
+  const remaining = Math.max(purchased - used, 0);
+  const completion = purchased > 0 ? Math.min(1, used / purchased) : 0;
 
-  const creativeStats: Map<string, CreativeStat> = new Map();
-  for (const creative of creatives ?? []) {
-    creativeStats.set(creative.id, {
-      id: creative.id,
-      title: creative.title,
-      delivered: 0,
-      campaignCount: 0,
-    });
-  }
-
-  const scheduleStats: Map<string, ScheduleStat> = new Map();
-  for (const campaign of campaigns ?? []) {
-    if (campaign.creative_id && creativeStats.has(campaign.creative_id)) {
-      const stat = creativeStats.get(campaign.creative_id)!;
-      stat.delivered += campaign.current_views ?? 0;
-      stat.campaignCount += 1;
-    }
-    const band = campaign.schedule_band ?? 'all';
-    const existing = scheduleStats.get(band) ?? {
-      band,
-      delivered: 0,
-      campaigns: 0,
-    };
-    existing.delivered += campaign.current_views ?? 0;
-    existing.campaigns += 1;
-    scheduleStats.set(band, existing);
-  }
-
-  const sortedCreatives = Array.from(creativeStats.values()).sort(
-    (a, b) => b.delivered - a.delivered,
-  );
-  const sortedSchedules = Array.from(scheduleStats.values()).sort(
-    (a, b) => b.delivered - a.delivered,
-  );
+  const ratings = (ratedViews ?? []).filter((v) => v.rating != null);
+  const avgRating =
+    ratings.length > 0 ? ratings.reduce((a, v) => a + (v.rating ?? 0), 0) / ratings.length : null;
 
   return (
     <div className='space-y-8'>
       <header>
-        <p className='text-xs font-black uppercase tracking-[0.22em] text-red-200'>
-          Analytics
-        </p>
-        <h1 className='mt-2 text-4xl font-black tracking-[-0.04em]'>
-          Performance
-        </h1>
-        <p className='mt-2 max-w-2xl text-sm muted'>
-          We surface the metrics we trust today: delivered views per campaign,
-          creative coverage, and schedule mix. Detailed engagement (rating,
-          completion seconds, geo-lift) becomes available once rider impression
-          events flow through this workspace.
+        <p className='text-xs font-bold uppercase tracking-[0.2em] text-[var(--brand-red)]'>Analytics</p>
+        <h1 className='mt-2 text-3xl font-black tracking-tight'>Campaign performance</h1>
+        <p className='mt-2 max-w-2xl text-sm text-slate-300'>
+          Impressions delivered in rider trips, engagement, and destination clicks.
         </p>
       </header>
 
-      <section className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
-        <Stat
-          icon={<Activity className='size-5 text-red-200' aria-hidden />}
-          label='Views delivered'
-          value={NUM.format(totalDelivered)}
-          hint={
-            totalCap > 0
-              ? `${(overallCompletion * 100).toFixed(0)}% of plan`
-              : 'No cap configured'
-          }
-        />
-        <Stat
-          icon={<BarChart3 className='size-5 text-red-200' aria-hidden />}
-          label='Campaigns running'
-          value={NUM.format(
-            (campaigns ?? []).filter((c) => c.status === 'ACTIVE').length,
-          )}
-          hint={`${campaigns?.length ?? 0} total campaigns`}
-        />
-        <Stat
-          icon={<Clock4 className='size-5 text-red-200' aria-hidden />}
-          label='Schedule bands used'
-          value={NUM.format(sortedSchedules.length)}
-          hint={
-            sortedSchedules[0]
-              ? `Top: ${SCHEDULE_LABEL[sortedSchedules[0].band] ?? sortedSchedules[0].band}`
-              : '—'
-          }
-        />
+      <section className='grid gap-4 md:grid-cols-4'>
+        <Kpi icon={Activity} label='Impressions purchased' value={NUM.format(purchased)} />
+        <Kpi icon={BarChart3} label='Impressions used' value={NUM.format(used)} />
+        <Kpi icon={Activity} label='Remaining' value={NUM.format(remaining)} />
+        <Kpi icon={MousePointerClick} label='Clicks' value={NUM.format(clickCount ?? 0)} />
       </section>
 
-      <section className='panel rounded-3xl p-6'>
-        <div className='flex items-center gap-3'>
-          <BarChart3 className='size-5 text-red-200' aria-hidden />
-          <h2 className='text-lg font-black tracking-[-0.02em]'>
-            Campaign performance
-          </h2>
+      <section className='rounded-2xl border border-[var(--border)] bg-white/5 p-4'>
+        <div className='flex items-center justify-between text-sm'>
+          <span className='text-slate-400'>Delivery progress</span>
+          <span className='font-semibold'>{Math.round(completion * 100)}%</span>
         </div>
-        <div className='mt-4 overflow-hidden rounded-2xl border border-[var(--border)]'>
-          <table className='w-full min-w-[40rem] text-left text-sm'>
-            <thead className='bg-white/8 text-xs uppercase tracking-[0.18em] muted'>
-              <tr>
-                <th className='px-4 py-3'>Campaign</th>
-                <th className='px-4 py-3'>Status</th>
-                <th className='px-4 py-3'>Delivered</th>
-                <th className='px-4 py-3'>Plan</th>
-                <th className='px-4 py-3'>Completion</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(campaigns ?? []).length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className='px-4 py-6 text-center text-sm muted'
-                  >
-                    No campaigns yet — performance will populate once you start
-                    running ads.
-                  </td>
+        <div className='mt-2 h-2 overflow-hidden rounded-full bg-white/10'>
+          <div className='h-full bg-[var(--brand-red)]' style={{ width: `${completion * 100}%` }} />
+        </div>
+        {avgRating != null ? (
+          <p className='mt-4 text-sm text-slate-300'>Average rider rating: {avgRating.toFixed(1)} / 5</p>
+        ) : null}
+      </section>
+
+      <section className='overflow-hidden rounded-2xl border border-[var(--border)]'>
+        <table className='w-full text-sm'>
+          <thead className='border-b border-[var(--border)] bg-white/5 text-left text-xs uppercase text-slate-400'>
+            <tr>
+              <th className='px-4 py-3'>Campaign</th>
+              <th className='px-4 py-3'>Package</th>
+              <th className='px-4 py-3'>Purchased</th>
+              <th className='px-4 py-3'>Used</th>
+              <th className='px-4 py-3'>Remaining</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((c) => {
+              const pkg = Array.isArray(c.package) ? c.package[0] : c.package;
+              const p = (c.impressions_purchased ?? c.max_views ?? 0) + (c.impressions_bonus ?? 0);
+              const u = c.impressions_used ?? c.current_views ?? 0;
+              return (
+                <tr key={c.campaign_id} className='border-b border-[var(--border)]'>
+                  <td className='px-4 py-3 font-semibold'>{c.advertiser}</td>
+                  <td className='px-4 py-3 text-slate-400'>{pkg?.name ?? '—'}</td>
+                  <td className='px-4 py-3'>{NUM.format(p)}</td>
+                  <td className='px-4 py-3'>{NUM.format(u)}</td>
+                  <td className='px-4 py-3'>{NUM.format(Math.max(p - u, 0))}</td>
                 </tr>
-              ) : (
-                (campaigns ?? []).map((campaign) => {
-                  const cap = campaign.max_views ?? 0;
-                  const delivered = campaign.current_views ?? 0;
-                  const pct = cap > 0 ? Math.min(1, delivered / cap) : 0;
-                  return (
-                    <tr
-                      key={campaign.campaign_id}
-                      className='border-t border-[var(--border)]'
-                    >
-                      <td className='px-4 py-3'>
-                        <p className='font-semibold'>{campaign.advertiser}</p>
-                        <p className='text-xs muted'>
-                          {SCHEDULE_LABEL[campaign.schedule_band ?? 'all'] ??
-                            campaign.schedule_band}
-                        </p>
-                      </td>
-                      <td className='px-4 py-3'>
-                        {STATUS_LABEL[campaign.status] ?? campaign.status}
-                      </td>
-                      <td className='px-4 py-3'>{NUM.format(delivered)}</td>
-                      <td className='px-4 py-3'>
-                        {cap > 0 ? NUM.format(cap) : '∞'}
-                      </td>
-                      <td className='px-4 py-3'>
-                        {cap > 0 ? `${(pct * 100).toFixed(0)}%` : '—'}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+              );
+            })}
+          </tbody>
+        </table>
       </section>
 
-      <section className='panel rounded-3xl p-6'>
-        <div className='flex items-center gap-3'>
-          <FileVideo className='size-5 text-red-200' aria-hidden />
-          <h2 className='text-lg font-black tracking-[-0.02em]'>
-            Creative coverage
-          </h2>
-        </div>
-        <div className='mt-4 overflow-hidden rounded-2xl border border-[var(--border)]'>
-          <table className='w-full min-w-[36rem] text-left text-sm'>
-            <thead className='bg-white/8 text-xs uppercase tracking-[0.18em] muted'>
-              <tr>
-                <th className='px-4 py-3'>Creative</th>
-                <th className='px-4 py-3'>Linked campaigns</th>
-                <th className='px-4 py-3'>Total delivered views</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedCreatives.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={3}
-                    className='px-4 py-6 text-center text-sm muted'
-                  >
-                    Upload a creative to see how it performs across your
-                    campaigns.
-                  </td>
-                </tr>
-              ) : (
-                sortedCreatives.map((creative) => (
-                  <tr
-                    key={creative.id}
-                    className='border-t border-[var(--border)]'
-                  >
-                    <td className='px-4 py-3 font-semibold'>
-                      {creative.title}
-                    </td>
-                    <td className='px-4 py-3'>
-                      {NUM.format(creative.campaignCount)}
-                    </td>
-                    <td className='px-4 py-3'>
-                      {NUM.format(creative.delivered)}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className='panel rounded-3xl p-6'>
-        <div className='flex items-center gap-3'>
-          <Clock4 className='size-5 text-red-200' aria-hidden />
-          <h2 className='text-lg font-black tracking-[-0.02em]'>
-            Delivery by schedule band
-          </h2>
-        </div>
-        <div className='mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
-          {sortedSchedules.length === 0 ? (
-            <p className='text-sm muted'>
-              Schedule mix will appear once campaigns deliver views.
-            </p>
-          ) : (
-            sortedSchedules.map((stat) => (
-              <article
-                key={stat.band}
-                className='rounded-2xl border border-[var(--border)] bg-white/4 p-4'
-              >
-                <p className='text-xs font-black uppercase tracking-[0.22em] muted'>
-                  {SCHEDULE_LABEL[stat.band] ?? stat.band}
-                </p>
-                <p className='mt-2 text-2xl font-black'>
-                  {NUM.format(stat.delivered)}
-                </p>
-                <p className='mt-1 text-xs muted'>
-                  {stat.campaigns} campaign{stat.campaigns === 1 ? '' : 's'}
-                </p>
-              </article>
-            ))
-          )}
-        </div>
-      </section>
-
-      <section className='rounded-3xl border border-amber-300/30 bg-amber-300/8 p-6 text-sm text-amber-100'>
-        <p className='font-bold'>Detailed engagement analytics arrive next.</p>
-        <p className='mt-1 opacity-90'>
-          Per-rider impressions, audio retention, and geo-lift land here once
-          the rider app starts publishing impression events to Trip Media. Until
-          then we keep these numbers honest and show only what we can prove.
-        </p>
-      </section>
+      {(ratedViews ?? []).some((v) => v.comment) ? (
+        <section className='rounded-2xl border border-[var(--border)] bg-white/5 p-4'>
+          <div className='flex items-center gap-2'>
+            <MessageSquare className='h-4 w-4' />
+            <h2 className='text-lg font-bold'>Recent rider comments</h2>
+          </div>
+          <ul className='mt-4 space-y-3 text-sm'>
+            {(ratedViews ?? [])
+              .filter((v) => v.comment)
+              .slice(0, 10)
+              .map((v, i) => (
+                <li key={i} className='rounded-xl border border-[var(--border)] bg-white/5 p-3'>
+                  {v.rating ? <span className='font-semibold'>{v.rating}/5 · </span> : null}
+                  {v.comment}
+                </li>
+              ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }
 
-function Stat({
-  icon,
+function Kpi({
+  icon: Icon,
   label,
   value,
-  hint,
 }: {
-  icon: React.ReactNode;
+  icon: typeof Activity;
   label: string;
   value: string;
-  hint: string;
 }) {
   return (
-    <div className='panel rounded-3xl p-5'>
-      <div className='flex items-center gap-2'>
-        {icon}
-        <p className='text-xs font-black uppercase tracking-[0.22em] muted'>
-          {label}
-        </p>
-      </div>
-      <p className='mt-3 text-3xl font-black tracking-[-0.02em]'>{value}</p>
-      <p className='mt-1 text-xs muted'>{hint}</p>
-    </div>
+    <article className='rounded-2xl border border-[var(--border)] bg-white/5 p-4'>
+      <Icon className='h-5 w-5 text-[var(--brand-red)]' />
+      <p className='mt-3 text-xs uppercase tracking-wide text-slate-400'>{label}</p>
+      <p className='mt-1 text-2xl font-black'>{value}</p>
+    </article>
   );
 }

@@ -41,8 +41,11 @@ const ensurePartnerWorkspace = async (userId: string, email: string, companyName
     .from("media_partners")
     .insert({
       name: companyName,
+      company_name: companyName,
       trial_ends_at: trialEndsAt,
-      promotional_credits_balance: 1000,
+      promotional_credits_balance: 0,
+      impression_credits_balance: 0,
+      prelaunch_bonus_claimed: false,
     })
     .select("id")
     .single()
@@ -63,32 +66,6 @@ const ensurePartnerWorkspace = async (userId: string, email: string, companyName
   if (memberError) {
     logActionError("trip_media.signup", "partner_member_create_failed", memberError, { userId, partnerId: partner.id })
     throw memberError
-  }
-
-  const { data: starterPackage, error: packageError } = await admin.from("ad_packages").select("id").eq("slug", "starter").maybeSingle()
-
-  if (packageError) {
-    logActionError("trip_media.signup", "starter_package_lookup_failed", packageError, { userId, partnerId: partner.id })
-    throw packageError
-  }
-
-  if (!starterPackage) {
-    logActionWarn("trip_media.signup", "starter_package_missing", { userId, partnerId: partner.id })
-    return
-  }
-
-  const { error: subscriptionError } = await admin.from("partner_subscriptions").insert({
-    partner_id: partner.id,
-    package_id: starterPackage.id,
-    provider: "payfast",
-    status: "trialing",
-    current_period_start: new Date().toISOString(),
-    current_period_end: trialEndsAt,
-  })
-
-  if (subscriptionError) {
-    logActionError("trip_media.signup", "starter_subscription_create_failed", subscriptionError, { userId, partnerId: partner.id })
-    throw subscriptionError
   }
 
   logActionInfo("trip_media.signup", "partner_workspace_created", { userId, partnerId: partner.id })
