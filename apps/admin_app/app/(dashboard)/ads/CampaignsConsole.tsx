@@ -10,6 +10,7 @@ import { StatusPill } from "@/components/trip-media/Surface"
 import { PromptDialog } from "@/components/trip-media/PromptDialog"
 import {
   adjustCampaignDeliveryAction,
+  cancelCampaignCreditPartnerAction,
   setCampaignStatusAction,
 } from "@/lib/trip-media/server-actions"
 import type { CampaignRow, CampaignStatus } from "@/lib/trip-media/campaigns"
@@ -162,7 +163,7 @@ export function CampaignsConsole({
 function CampaignDrawer({ campaign }: { campaign: CampaignRow }) {
   const [pendingLabel, setPendingLabel] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-  const [promptKind, setPromptKind] = useState<null | "pause" | "resume">(null)
+  const [promptKind, setPromptKind] = useState<null | "pause" | "resume" | "reject" | "cancel">(null)
 
   const adjustForm = useForm<AdjustValues>({
     resolver: zodResolver(adjustSchema),
@@ -178,7 +179,7 @@ function CampaignDrawer({ campaign }: { campaign: CampaignRow }) {
     defaultValues: { reason: "" },
   })
 
-  const runStatusChange = (label: string, status: "PAUSED" | "ACTIVE" | "FORCE_STOPPED", reason?: string) => {
+  const runStatusChange = (label: string, status: "PAUSED" | "ACTIVE" | "FORCE_STOPPED" | "REJECTED", reason?: string) => {
     setPendingLabel(label)
     startTransition(async () => {
       const result = await setCampaignStatusAction({ campaignId: campaign.campaignId, status, reason })
@@ -274,6 +275,26 @@ function CampaignDrawer({ campaign }: { campaign: CampaignRow }) {
           ) : null}
 
           <div className="grid grid-cols-2 gap-2">
+            {campaign.status === "PENDING_REVIEW" ? (
+              <>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => runStatusChange("Approved", "ACTIVE")}
+                  className="h-10 rounded-lg bg-emerald-600 px-3 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  Approve
+                </button>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => setPromptKind("reject")}
+                  className="h-10 rounded-lg border border-red-400/40 bg-red-500/10 px-3 text-sm font-semibold text-red-100 disabled:opacity-50"
+                >
+                  Reject
+                </button>
+              </>
+            ) : null}
             <button
               type="button"
               disabled={isPending || campaign.status !== "ACTIVE"}
@@ -373,16 +394,16 @@ function CampaignDrawer({ campaign }: { campaign: CampaignRow }) {
         }}
       />
       <PromptDialog
-        open={promptKind === "resume"}
-        title="Resume this campaign"
-        description="The campaign starts delivering again. The note is saved to the audit trail."
-        label="Note for the audit log"
-        placeholder="What changed? Why is it safe to resume?"
-        submitLabel="Resume campaign"
+        open={promptKind === "reject"}
+        title="Reject this campaign"
+        description="The advertiser can fix issues and resubmit. They will see your reason."
+        label="Rejection reason"
+        placeholder="What needs to change?"
+        submitLabel="Reject campaign"
         onClose={() => setPromptKind(null)}
         onSubmit={async (reason) => {
           setPromptKind(null)
-          runStatusChange("Resumed", "ACTIVE", reason)
+          runStatusChange("Rejected", "REJECTED", reason)
         }}
       />
     </div>

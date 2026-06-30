@@ -192,6 +192,7 @@ export function allowedNavForRole(role: string | null | undefined) {
     { href: "/ads", label: "Campaigns", cap: "view_ads" },
     { href: "/creatives", label: "Creatives review", cap: "moderate_creatives" },
     { href: "/trip-media/advertisers", label: "Advertisers", cap: "view_advertisers" },
+    { href: "/trip-media/internal-ads", label: "Internal Trip ads", cap: "view_trip_media" },
     { href: "/trip-media/rider-rewards", label: "Rider rewards", cap: "view_rider_rewards" },
     { href: "/trip-media/fraud", label: "Fraud monitoring", cap: "view_fraud" },
     { href: "/trip-media/analytics", label: "Trip Media analytics", cap: "view_trip_media_analytics" },

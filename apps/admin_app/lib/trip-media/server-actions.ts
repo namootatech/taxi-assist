@@ -96,7 +96,7 @@ export async function setCreativeStatusAction(
 // ---------------------------------------------------------------------------
 export interface CampaignStatusInput {
   campaignId: string;
-  status: 'PAUSED' | 'ACTIVE' | 'FORCE_STOPPED';
+  status: 'PAUSED' | 'ACTIVE' | 'FORCE_STOPPED' | 'REJECTED';
   reason?: string;
 }
 
@@ -105,7 +105,7 @@ export async function setCampaignStatusAction(
 ): Promise<ActionResult> {
   const action = 'admin.campaigns.set_status';
   if (!input.campaignId) return { ok: false, error: 'Pick a campaign first.' };
-  if (input.status === 'FORCE_STOPPED') {
+  if (input.status === 'FORCE_STOPPED' || input.status === 'REJECTED') {
     const missing = requireReason(
       input.reason,
       'Add a reason. The advertiser will see this and so will the audit log.',
@@ -169,6 +169,29 @@ export async function adjustCampaignDeliveryAction(
     logActionError(action, 'rpc_failed', error);
     return { ok: false, error: userFacingError(error) };
   }
+  const result = interpretRpc(data);
+  if (!result.ok) return result;
+
+  revalidatePath('/ads');
+  logActionInfo(action, 'completed');
+  return { ok: true };
+}
+
+export async function cancelCampaignCreditPartnerAction(
+  campaignId: string,
+  reason: string,
+): Promise<ActionResult> {
+  const action = 'admin.campaigns.cancel_credit';
+  const missing = requireReason(reason, 'Add a cancellation reason.');
+  if (missing) return { ok: false, error: missing };
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc('admin_cancel_campaign_credit_partner', {
+    p_campaign_id: campaignId,
+    p_reason: reason,
+  });
+
+  if (error) return { ok: false, error: userFacingError(error) };
   const result = interpretRpc(data);
   if (!result.ok) return result;
 
