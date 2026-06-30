@@ -23,21 +23,7 @@ export default async function DashboardLayout({
   const nav = allowedNavForRole(role);
 
   return (
-    <AppShell
-      nav={nav}
-      userEmail={user?.email ?? 'unknown'}
-      role={role}
-      onSignOut={async () => {
-        'use server';
-        const supabase = await createSupabaseServerClient();
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-          logActionError('admin.signout', 'auth_signout_failed', error);
-        } else {
-          logActionInfo('admin.signout', 'completed');
-        }
-      }}
-    >
+    <AppShell nav={nav} userEmail={user?.email ?? 'unknown'} role={role}>
       {children}
     </AppShell>
   );
