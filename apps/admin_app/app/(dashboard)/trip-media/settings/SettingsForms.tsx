@@ -10,6 +10,7 @@ import { tripMediaSettingsKeys } from "@/lib/trip-media/policy-constants"
 import type {
   RewardCaps,
   RiskThresholds,
+  RiderPayoutMultiplier,
   TripMediaSettings,
   WatchRules,
 } from "@/lib/trip-media/settings"
@@ -45,9 +46,14 @@ const watchSchema = z.object({
   min_comment_length: z.number().int().min(0, "Use 0 or higher."),
 })
 
+const payoutMultiplierSchema = z.object({
+  multiplier: z.number().min(0.1).max(5, "Use a value between 0.1 and 5."),
+})
+
 export function SettingsForms({ initial }: { initial: TripMediaSettings }) {
   return (
     <div className="grid grid-cols-1 gap-6">
+      <RiderPayoutMultiplierForm initial={initial.riderPayoutMultiplier} />
       <RewardCapsForm initial={initial.rewardCaps} />
       <RejectionReasonsForm initial={initial.rejectionReasons} />
       <RiskThresholdsForm initial={initial.riskThresholds} />
@@ -77,6 +83,43 @@ function ActionButton({ pending, children }: { pending: boolean; children: React
     >
       {pending ? "Saving…" : children}
     </button>
+  )
+}
+
+function RiderPayoutMultiplierForm({ initial }: { initial: RiderPayoutMultiplier }) {
+  const [, startTransition] = useTransition()
+  const [pending, setPending] = useState(false)
+  const form = useForm<RiderPayoutMultiplier>({
+    resolver: zodResolver(payoutMultiplierSchema),
+    defaultValues: initial,
+  })
+
+  const submit = (values: RiderPayoutMultiplier) => {
+    setPending(true)
+    startTransition(async () => {
+      const result = await setTripMediaSettingAction(tripMediaSettingsKeys.riderPayoutMultiplier, values)
+      setPending(false)
+      if (result.ok) toast.success("Rider payout multiplier saved")
+      else toast.error(result.error ?? "Action failed.")
+    })
+  }
+
+  return (
+    <FormShell
+      title="Rider payout multiplier"
+      description="Applied at trip end on top of each campaign's rider payout rate. Use above 1.0 for launch incentives, then reduce as rider supply stabilises."
+    >
+      <form className="grid grid-cols-1 gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(submit)}>
+        <NumberField
+          label="Multiplier (e.g. 1.25 = 25% higher)"
+          step="0.01"
+          {...form.register("multiplier", { setValueAs: (v) => Number(v) })}
+        />
+        <div className="flex items-end justify-end md:col-span-2">
+          <ActionButton pending={pending}>Save multiplier</ActionButton>
+        </div>
+      </form>
+    </FormShell>
   )
 }
 

@@ -2,15 +2,17 @@
 
 import { useTransition } from 'react';
 import { toast } from 'sonner';
-import { createInternalTripAd, setInternalTripAdStatus } from './actions';
+import { createInternalTripAd, deleteInternalTripAd, setInternalTripAdStatus } from './actions';
 
 interface InternalAd {
   id: string;
   title: string;
   storage_path: string;
+  mime_type: string | null;
   status: string;
   sort_order: number;
   cta_url: string | null;
+  signedUrl: string | null;
 }
 
 export function InternalAdsManager({ ads }: { ads: InternalAd[] }) {
@@ -25,8 +27,13 @@ export function InternalAdsManager({ ads }: { ads: InternalAd[] }) {
           {ads.map((ad) => (
             <li key={ad.id} className="rounded-xl border border-token p-3 text-sm">
               <div className="font-semibold">{ad.title}</div>
-              <div className="mt-1 text-xs muted">{ad.storage_path}</div>
-              <div className="mt-2 flex gap-2">
+              {ad.signedUrl && ad.mime_type?.startsWith('video/') ? (
+                <video src={ad.signedUrl} controls playsInline className="mt-2 aspect-[9/16] max-h-48 w-full rounded-lg bg-black object-contain" />
+              ) : ad.signedUrl && ad.mime_type?.startsWith('image/') ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={ad.signedUrl} alt={ad.title} className="mt-2 aspect-[9/16] max-h-48 w-full rounded-lg object-contain" />
+              ) : null}
+              <div className="mt-2 flex flex-wrap gap-2">
                 <span className="rounded-full border border-token px-2 py-0.5 text-xs">{ad.status}</span>
                 {ad.status === 'active' ? (
                   <button
@@ -59,6 +66,20 @@ export function InternalAdsManager({ ads }: { ads: InternalAd[] }) {
                     Activate
                   </button>
                 )}
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() =>
+                    startTransition(async () => {
+                      const r = await deleteInternalTripAd(ad.id);
+                      if (!r.ok) toast.error(r.error);
+                      else toast.success('Ad removed');
+                    })
+                  }
+                  className="text-xs text-red-500"
+                >
+                  Delete
+                </button>
               </div>
             </li>
           ))}
@@ -67,7 +88,8 @@ export function InternalAdsManager({ ads }: { ads: InternalAd[] }) {
       </section>
 
       <section className="rounded-2xl border border-token surface-1 p-4">
-        <h2 className="text-lg font-semibold">Add internal ad</h2>
+        <h2 className="text-lg font-semibold">Upload internal ad</h2>
+        <p className="mt-1 text-sm muted">Portrait MP4/MOV/JPG/PNG, max 300MB. Stored under internal/ prefix.</p>
         <form
           className="mt-4 grid gap-3 text-sm"
           action={(fd) =>
@@ -83,8 +105,8 @@ export function InternalAdsManager({ ads }: { ads: InternalAd[] }) {
             <input name="title" required className="rounded-lg border border-token bg-transparent px-3 py-2" />
           </label>
           <label className="grid gap-1">
-            Storage path
-            <input name="storage_path" required placeholder="internal/promo.mp4" className="rounded-lg border border-token bg-transparent px-3 py-2" />
+            Creative file
+            <input name="creative" type="file" required accept="video/mp4,video/quicktime,image/jpeg,image/png" className="text-sm" />
           </label>
           <label className="grid gap-1">
             CTA URL (optional)
@@ -99,7 +121,7 @@ export function InternalAdsManager({ ads }: { ads: InternalAd[] }) {
             disabled={pending}
             className="mt-2 h-10 rounded-lg bg-[var(--brand-red)] text-sm font-semibold text-white disabled:opacity-50"
           >
-            {pending ? 'Saving…' : 'Create ad'}
+            {pending ? 'Uploading…' : 'Upload ad'}
           </button>
         </form>
       </section>

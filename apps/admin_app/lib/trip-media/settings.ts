@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import {
   defaultRejectionReasons,
   defaultRewardCaps,
+  defaultRiderPayoutMultiplier,
   defaultRiskThresholds,
   defaultWatchRules,
   type RejectionReason,
@@ -31,11 +32,16 @@ export interface WatchRules {
   min_comment_length: number;
 }
 
+export interface RiderPayoutMultiplier {
+  multiplier: number;
+}
+
 export interface TripMediaSettings {
   rewardCaps: RewardCaps;
   rejectionReasons: Array<RejectionReason>;
   riskThresholds: RiskThresholds;
   watchRules: WatchRules;
+  riderPayoutMultiplier: RiderPayoutMultiplier;
 }
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -110,6 +116,13 @@ const parseRiskThresholds = (value: unknown): RiskThresholds => {
   };
 };
 
+const parseRiderPayoutMultiplier = (value: unknown): RiderPayoutMultiplier => {
+  if (!isObject(value)) return defaultRiderPayoutMultiplier;
+  return {
+    multiplier: numberOr(value.multiplier, defaultRiderPayoutMultiplier.multiplier),
+  };
+};
+
 const parseWatchRules = (value: unknown): WatchRules => {
   if (!isObject(value)) return defaultWatchRules;
   return {
@@ -135,6 +148,7 @@ export async function loadTripMediaSettings(): Promise<TripMediaSettings> {
       'rejection_reasons',
       'risk_thresholds',
       'watch_rules',
+      'rider_payout_multiplier',
     ]);
 
   const fallback: TripMediaSettings = {
@@ -142,6 +156,7 @@ export async function loadTripMediaSettings(): Promise<TripMediaSettings> {
     rejectionReasons: defaultRejectionReasons,
     riskThresholds: defaultRiskThresholds,
     watchRules: defaultWatchRules,
+    riderPayoutMultiplier: defaultRiderPayoutMultiplier,
   };
 
   if (error || !data) return fallback;
@@ -155,5 +170,6 @@ export async function loadTripMediaSettings(): Promise<TripMediaSettings> {
     rejectionReasons: parseRejectionReasons(map.get('rejection_reasons')),
     riskThresholds: parseRiskThresholds(map.get('risk_thresholds')),
     watchRules: parseWatchRules(map.get('watch_rules')),
+    riderPayoutMultiplier: parseRiderPayoutMultiplier(map.get('rider_payout_multiplier')),
   };
 }

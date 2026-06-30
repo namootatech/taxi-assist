@@ -145,6 +145,135 @@ export interface CampaignAdjustInput {
   reason: string;
 }
 
+export interface CampaignPackageAdjustInput {
+  campaignId: string;
+  packageId?: string | null;
+  impressionsPurchased?: number | null;
+  impressionsBonus?: number | null;
+  riderPayoutCents?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  reason: string;
+}
+
+export async function adjustCampaignPackageAction(
+  input: CampaignPackageAdjustInput,
+): Promise<ActionResult> {
+  const action = 'admin.campaigns.adjust_package';
+  if (!input.campaignId) return { ok: false, error: 'Pick a campaign first.' };
+  const missing = requireReason(
+    input.reason,
+    'Add a reason for changing campaign package settings.',
+  );
+  if (missing) return { ok: false, error: missing };
+
+  logActionInfo(action, 'started');
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc('admin_adjust_campaign_package', {
+    p_campaign_id: input.campaignId,
+    p_package_id: input.packageId ?? null,
+    p_impressions_purchased: input.impressionsPurchased ?? null,
+    p_impressions_bonus: input.impressionsBonus ?? null,
+    p_rider_payout_cents: input.riderPayoutCents ?? null,
+    p_start_date: input.startDate ?? null,
+    p_end_date: input.endDate ?? null,
+    p_reason: input.reason,
+  });
+
+  if (error) {
+    logActionError(action, 'rpc_failed', error);
+    return { ok: false, error: userFacingError(error) };
+  }
+  const result = interpretRpc(data);
+  if (!result.ok) return result;
+
+  revalidatePath('/ads');
+  logActionInfo(action, 'completed');
+  return { ok: true };
+}
+
+export interface UpdatePackageInput {
+  packageId: string;
+  basePriceCents: number;
+  minImpressions: number;
+  maxDurationSeconds: number;
+  skipAfterSeconds: number;
+  riderPayoutCents: number;
+  description: string;
+  isActive: boolean;
+}
+
+export async function updateCampaignPackageAction(
+  input: UpdatePackageInput,
+): Promise<ActionResult> {
+  const action = 'admin.packages.update';
+  if (!input.packageId) return { ok: false, error: 'Pick a package first.' };
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from('ad_packages')
+    .update({
+      base_price_cents: input.basePriceCents,
+      monthly_price_cents: input.basePriceCents,
+      min_impressions: input.minImpressions,
+      max_duration_seconds: input.maxDurationSeconds,
+      skip_after_seconds: input.skipAfterSeconds,
+      rider_payout_cents: input.riderPayoutCents,
+      description: input.description,
+      is_active: input.isActive,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', input.packageId)
+    .eq('package_kind', 'campaign');
+
+  if (error) {
+    logActionError(action, 'update_failed', error);
+    return { ok: false, error: userFacingError(error) };
+  }
+
+  revalidatePath('/trip-media/packages');
+  return { ok: true };
+}
+
+export interface UpdatePromotionInput {
+  promotionId: string;
+  name: string;
+  startAt: string;
+  endAt: string;
+  discountPct: number;
+  bonusImpressions: number;
+  isActive: boolean;
+}
+
+export async function updatePlatformPromotionAction(
+  input: UpdatePromotionInput,
+): Promise<ActionResult> {
+  const action = 'admin.promotions.update';
+  if (!input.promotionId) return { ok: false, error: 'Pick a promotion first.' };
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from('platform_promotions')
+    .update({
+      name: input.name,
+      start_at: input.startAt,
+      end_at: input.endAt,
+      discount_pct: input.discountPct,
+      bonus_impressions: input.bonusImpressions,
+      is_active: input.isActive,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', input.promotionId);
+
+  if (error) {
+    logActionError(action, 'update_failed', error);
+    return { ok: false, error: userFacingError(error) };
+  }
+
+  revalidatePath('/trip-media/packages');
+  return { ok: true };
+}
+
 export async function adjustCampaignDeliveryAction(
   input: CampaignAdjustInput,
 ): Promise<ActionResult> {

@@ -10,56 +10,70 @@ import { StatusPill } from "@/components/trip-media/Surface"
 import { PromptDialog } from "@/components/trip-media/PromptDialog"
 import {
   adjustCampaignDeliveryAction,
+  adjustCampaignPackageAction,
   cancelCampaignCreditPartnerAction,
   setCampaignStatusAction,
 } from "@/lib/trip-media/server-actions"
 import type { CampaignRow, CampaignStatus } from "@/lib/trip-media/campaigns"
+import type { CampaignPackageRow } from "@/lib/trip-media/packages"
 
 const STATUS_OPTIONS: Array<{ value: CampaignStatus | "ALL"; label: string }> = [
   { value: "ALL", label: "All" },
   { value: "ACTIVE", label: "Active" },
   { value: "PAUSED", label: "Paused" },
   { value: "PENDING_REVIEW", label: "Pending review" },
+  { value: "CANCELLATION_PENDING", label: "Cancellation requests" },
   { value: "DRAFT", label: "Drafts" },
   { value: "COMPLETED", label: "Completed" },
   { value: "ENDED", label: "Ended" },
   { value: "REJECTED", label: "Rejected" },
+  { value: "CANCELLED", label: "Cancelled" },
   { value: "FORCE_STOPPED", label: "Force-stopped" },
 ]
 
 const tone = (status: CampaignStatus): "success" | "warning" | "danger" | "muted" | "default" => {
   if (status === "ACTIVE") return "success"
-  if (status === "PAUSED" || status === "PENDING_REVIEW") return "warning"
-  if (status === "FORCE_STOPPED" || status === "REJECTED") return "danger"
+  if (status === "PAUSED" || status === "PENDING_REVIEW" || status === "CANCELLATION_PENDING") return "warning"
+  if (status === "FORCE_STOPPED" || status === "REJECTED" || status === "CANCELLED") return "danger"
   return "muted"
 }
 
 const formatDate = (v: string | null | undefined) => (v ? new Date(v).toLocaleString() : "—")
 const formatCurrency = (n: number) => new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(n)
+const formatCents = (cents: number) => formatCurrency(cents / 100)
 
-const adjustSchema = z.object({
-  maxViews: z
-    .union([z.number().int().nonnegative("Use a non-negative whole number."), z.null()])
-    .optional(),
-  rewardPerView: z
-    .union([z.number().nonnegative("Use a non-negative number."), z.null()])
-    .optional(),
+const packageAdjustSchema = z.object({
+  packageId: z.string().optional(),
+  impressionsPurchased: z.number().int().min(1).optional(),
+  impressionsBonus: z.number().int().min(0).optional(),
+  riderPayoutCents: z.number().int().min(0).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
   reason: z.string().min(8, "Add a short reason. The audit log keeps it.").max(600),
+})
+
+const legacyAdjustSchema = z.object({
+  maxViews: z.union([z.number().int().nonnegative(), z.null()]).optional(),
+  rewardPerView: z.union([z.number().nonnegative(), z.null()]).optional(),
+  reason: z.string().min(8).max(600),
 })
 
 const stopSchema = z.object({
   reason: z.string().min(8, "Add a reason. The advertiser sees this.").max(600),
 })
 
-type AdjustValues = z.infer<typeof adjustSchema>
+type PackageAdjustValues = z.infer<typeof packageAdjustSchema>
+type LegacyAdjustValues = z.infer<typeof legacyAdjustSchema>
 type StopValues = z.infer<typeof stopSchema>
 
 export function CampaignsConsole({
   campaigns,
+  packages,
   selectedStatus,
   counts,
 }: {
   campaigns: Array<CampaignRow>
+  packages: Array<CampaignPackageRow>
   selectedStatus: CampaignStatus | "ALL"
   counts: Record<CampaignStatus | "ALL", number>
 }) {
@@ -101,14 +115,14 @@ export function CampaignsConsole({
               <tr>
                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide muted">Campaign</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide muted">Status</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide muted">Views</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide muted">Spend so far</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide muted">Impressions</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide muted">Payment</th>
               </tr>
             </thead>
             <tbody>
               {campaigns.map((c) => {
                 const isActive = c.campaignId === active?.campaignId
-                const spend = c.currentViews * c.rewardPerView
+                const total = (c.impressionsPurchased ?? 0) + c.impressionsBonus
                 return (
                   <tr
                     key={c.campaignId}
@@ -121,17 +135,27 @@ export function CampaignsConsole({
                     <td className="px-4 py-3 align-top">
                       <div className="font-semibold">{c.advertiser}</div>
                       <div className="mt-1 text-xs muted">
-                        {c.partnerName ?? "—"} • {c.scheduleBand}
+                        {c.packageName ?? "Legacy"} • {c.partnerName ?? "—"}
                       </div>
                     </td>
                     <td className="px-4 py-3 align-top">
                       <StatusPill tone={tone(c.status)}>{c.status.toLowerCase().replace(/_/g, " ")}</StatusPill>
                     </td>
                     <td className="px-4 py-3 align-top">
-                      <div>{c.currentViews.toLocaleString()}{c.maxViews != null ? <span className="muted"> / {c.maxViews.toLocaleString()}</span> : null}</div>
-                      <div className="mt-1 text-xs muted">{formatCurrency(c.rewardPerView)}/view</div>
+                      <div>
+                        {c.impressionsUsed.toLocaleString()}
+                        <span className="muted"> / {total.toLocaleString()}</span>
+                      </div>
+                      <div className="mt-1 text-xs muted">{c.impressionsRemaining.toLocaleString()} left</div>
                     </td>
-                    <td className="px-4 py-3 align-top font-semibold">{formatCurrency(spend)}</td>
+                    <td className="px-4 py-3 align-top">
+                      <StatusPill tone={c.paymentStatus === "paid" ? "success" : "warning"}>
+                        {c.paymentStatus}
+                      </StatusPill>
+                      {c.totalPaidCents > 0 ? (
+                        <div className="mt-1 text-xs font-semibold">{formatCents(c.totalPaidCents)}</div>
+                      ) : null}
+                    </td>
                   </tr>
                 )
               })}
@@ -148,10 +172,10 @@ export function CampaignsConsole({
 
         <div>
           {active ? (
-            <CampaignDrawer key={active.campaignId} campaign={active} />
+            <CampaignDrawer key={active.campaignId} campaign={active} packages={packages} />
           ) : (
             <div className="rounded-2xl border border-dashed border-token p-10 text-center text-sm muted">
-              Pick a campaign to inspect spend, creative preview, and admin actions.
+              Pick a campaign to inspect impressions, escrow, creative preview, and admin actions.
             </div>
           )}
         </div>
@@ -160,13 +184,32 @@ export function CampaignsConsole({
   )
 }
 
-function CampaignDrawer({ campaign }: { campaign: CampaignRow }) {
+function CampaignDrawer({
+  campaign,
+  packages,
+}: {
+  campaign: CampaignRow
+  packages: Array<CampaignPackageRow>
+}) {
   const [pendingLabel, setPendingLabel] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [promptKind, setPromptKind] = useState<null | "pause" | "resume" | "reject" | "cancel">(null)
 
-  const adjustForm = useForm<AdjustValues>({
-    resolver: zodResolver(adjustSchema),
+  const packageForm = useForm<PackageAdjustValues>({
+    resolver: zodResolver(packageAdjustSchema),
+    defaultValues: {
+      packageId: campaign.packageId ?? undefined,
+      impressionsPurchased: campaign.impressionsPurchased ?? undefined,
+      impressionsBonus: campaign.impressionsBonus,
+      riderPayoutCents: campaign.riderPayoutCents ?? undefined,
+      startDate: campaign.startDate ?? undefined,
+      endDate: campaign.endDate ?? undefined,
+      reason: "",
+    },
+  })
+
+  const legacyForm = useForm<LegacyAdjustValues>({
+    resolver: zodResolver(legacyAdjustSchema),
     defaultValues: {
       maxViews: campaign.maxViews,
       rewardPerView: campaign.rewardPerView,
@@ -189,7 +232,30 @@ function CampaignDrawer({ campaign }: { campaign: CampaignRow }) {
     })
   }
 
-  const submitAdjust = (values: AdjustValues) => {
+  const submitPackageAdjust = (values: PackageAdjustValues) => {
+    setPendingLabel("Package updated")
+    startTransition(async () => {
+      const result = await adjustCampaignPackageAction({
+        campaignId: campaign.campaignId,
+        packageId: values.packageId || null,
+        impressionsPurchased: values.impressionsPurchased ?? null,
+        impressionsBonus: values.impressionsBonus ?? null,
+        riderPayoutCents: values.riderPayoutCents ?? null,
+        startDate: values.startDate || null,
+        endDate: values.endDate || null,
+        reason: values.reason,
+      })
+      setPendingLabel(null)
+      if (result.ok) {
+        toast.success(`Campaign updated • ${campaign.advertiser}`)
+        packageForm.reset({ ...values, reason: "" })
+      } else {
+        toast.error(result.error ?? "Action failed.")
+      }
+    })
+  }
+
+  const submitLegacyAdjust = (values: LegacyAdjustValues) => {
     setPendingLabel("Delivery updated")
     startTransition(async () => {
       const result = await adjustCampaignDeliveryAction({
@@ -201,11 +267,7 @@ function CampaignDrawer({ campaign }: { campaign: CampaignRow }) {
       setPendingLabel(null)
       if (result.ok) {
         toast.success(`Delivery updated • ${campaign.advertiser}`)
-        adjustForm.reset({
-          maxViews: values.maxViews ?? campaign.maxViews,
-          rewardPerView: values.rewardPerView ?? campaign.rewardPerView,
-          reason: "",
-        })
+        legacyForm.reset({ ...values, reason: "" })
       } else {
         toast.error(result.error ?? "Action failed.")
       }
@@ -217,7 +279,18 @@ function CampaignDrawer({ campaign }: { campaign: CampaignRow }) {
     stopForm.reset({ reason: "" })
   }
 
-  const spend = campaign.currentViews * campaign.rewardPerView
+  const creditCancellation = (reason: string) => {
+    setPendingLabel("Credits issued")
+    startTransition(async () => {
+      const result = await cancelCampaignCreditPartnerAction(campaign.campaignId, reason)
+      setPendingLabel(null)
+      if (result.ok) toast.success(`Partner credited • ${campaign.advertiser}`)
+      else toast.error(result.error ?? "Action failed.")
+    })
+  }
+
+  const totalImpressions = (campaign.impressionsPurchased ?? 0) + campaign.impressionsBonus
+  const canApprove = campaign.paymentStatus === "paid"
 
   return (
     <div className="overflow-hidden rounded-2xl border border-token surface-1 shadow-[var(--shadow)]">
@@ -225,10 +298,13 @@ function CampaignDrawer({ campaign }: { campaign: CampaignRow }) {
         <div className="min-w-0">
           <div className="truncate text-base font-semibold tracking-tight">{campaign.advertiser}</div>
           <div className="text-xs muted">
-            {campaign.partnerName ?? "—"} • {campaign.scheduleBand}
+            {campaign.companyName ?? campaign.partnerName ?? "—"} • {campaign.packageName ?? "Legacy package"}
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             <StatusPill tone={tone(campaign.status)}>{campaign.status.toLowerCase().replace(/_/g, " ")}</StatusPill>
+            <StatusPill tone={campaign.paymentStatus === "paid" ? "success" : "warning"}>
+              Payment {campaign.paymentStatus}
+            </StatusPill>
             {campaign.startDate ? <StatusPill tone="muted">From {campaign.startDate}</StatusPill> : null}
             {campaign.endDate ? <StatusPill tone="muted">To {campaign.endDate}</StatusPill> : null}
           </div>
@@ -247,30 +323,67 @@ function CampaignDrawer({ campaign }: { campaign: CampaignRow }) {
               src={campaign.creativeSignedUrl}
               controls
               playsInline
-              className="aspect-video w-full bg-black"
+              className="aspect-[9/16] w-full max-h-[420px] bg-black object-contain mx-auto"
             />
           ) : campaign.creativeSignedUrl && campaign.creativeMimeType?.startsWith("image/") ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={campaign.creativeSignedUrl} alt={campaign.creativeTitle ?? "Creative"} className="aspect-video w-full object-contain" />
+            <img src={campaign.creativeSignedUrl} alt={campaign.creativeTitle ?? "Creative"} className="aspect-[9/16] w-full max-h-[420px] object-contain mx-auto" />
           ) : (
-            <div className="flex aspect-video w-full items-center justify-center bg-[color:var(--surface-2)] text-sm muted">
-              {campaign.creativeTitle ? "No preview available" : "Legacy campaign — no linked creative"}
+            <div className="flex aspect-[9/16] w-full max-h-[420px] items-center justify-center bg-[color:var(--surface-2)] text-sm muted">
+              {campaign.creativeTitle ? "No preview available" : "No linked creative"}
             </div>
           )}
         </div>
 
         <div className="space-y-3 text-sm">
-          <div className="grid grid-cols-3 gap-2">
-            <Stat label="Views" value={campaign.currentViews.toLocaleString()} sub={campaign.maxViews != null ? `Cap ${campaign.maxViews.toLocaleString()}` : "No cap"} />
-            <Stat label="Reward / view" value={formatCurrency(campaign.rewardPerView)} sub="ZAR" />
-            <Stat label="Spend" value={formatCurrency(spend)} sub="Estimated" />
+          <div className="grid grid-cols-2 gap-2">
+            <Stat label="Impressions used" value={campaign.impressionsUsed.toLocaleString()} sub={`of ${totalImpressions.toLocaleString()}`} />
+            <Stat label="Remaining" value={campaign.impressionsRemaining.toLocaleString()} sub="Valid views only" />
+            <Stat label="Paid" value={formatCents(campaign.totalPaidCents)} sub={campaign.discountCents > 0 ? `${formatCents(campaign.discountCents)} discount` : "Partner payment"} />
+            <Stat label="Rider escrow" value={formatCents(campaign.escrowRiderCents)} sub={`Trip ${formatCents(campaign.escrowTripCents)}`} />
           </div>
 
-          {campaign.forceStopReason ? (
+          {campaign.riderPayoutCents != null ? (
+            <div className="rounded-xl border border-token bg-[color:var(--surface-2)] p-3 text-xs">
+              <div className="font-semibold">Rider payout (hidden from partner)</div>
+              <div className="mt-1">{formatCents(campaign.riderPayoutCents)} per valid impression</div>
+            </div>
+          ) : null}
+
+          {campaign.destinationValue ? (
+            <div className="rounded-xl border border-token bg-[color:var(--surface-2)] p-3 text-xs">
+              <div className="font-semibold">{campaign.destinationType === "whatsapp" ? "WhatsApp" : "Website"}</div>
+              <div className="mt-1 break-all">{campaign.destinationValue}</div>
+            </div>
+          ) : null}
+
+          {campaign.campaignNotes ? (
+            <div className="rounded-xl border border-token bg-[color:var(--surface-2)] p-3 text-xs">
+              <div className="font-semibold">Partner notes</div>
+              <div className="mt-1 whitespace-pre-wrap">{campaign.campaignNotes}</div>
+            </div>
+          ) : null}
+
+          {(campaign.forceStopReason || campaign.reviewNote || campaign.cancellationReason) ? (
             <div className="rounded-xl border border-red-400/30 bg-red-500/5 p-3">
-              <div className="text-xs font-semibold uppercase tracking-wide muted">Force-stop note</div>
-              <div className="mt-1 whitespace-pre-wrap">{campaign.forceStopReason}</div>
-              <div className="mt-1 text-[11px] muted">Stopped {formatDate(campaign.forceStoppedAt)}</div>
+              {campaign.forceStopReason ? (
+                <>
+                  <div className="text-xs font-semibold uppercase tracking-wide muted">Force-stop note</div>
+                  <div className="mt-1 whitespace-pre-wrap">{campaign.forceStopReason}</div>
+                </>
+              ) : null}
+              {campaign.reviewNote ? (
+                <>
+                  <div className="mt-2 text-xs font-semibold uppercase tracking-wide muted">Rejection note</div>
+                  <div className="mt-1 whitespace-pre-wrap">{campaign.reviewNote}</div>
+                </>
+              ) : null}
+              {campaign.cancellationReason ? (
+                <>
+                  <div className="mt-2 text-xs font-semibold uppercase tracking-wide muted">Cancellation request</div>
+                  <div className="mt-1 whitespace-pre-wrap">{campaign.cancellationReason}</div>
+                </>
+              ) : null}
             </div>
           ) : null}
 
@@ -279,9 +392,10 @@ function CampaignDrawer({ campaign }: { campaign: CampaignRow }) {
               <>
                 <button
                   type="button"
-                  disabled={isPending}
+                  disabled={isPending || !canApprove}
                   onClick={() => runStatusChange("Approved", "ACTIVE")}
                   className="h-10 rounded-lg bg-emerald-600 px-3 text-sm font-semibold text-white disabled:opacity-50"
+                  title={canApprove ? undefined : "Payment must be confirmed before approval"}
                 >
                   Approve
                 </button>
@@ -293,7 +407,20 @@ function CampaignDrawer({ campaign }: { campaign: CampaignRow }) {
                 >
                   Reject
                 </button>
+                {!canApprove ? (
+                  <p className="col-span-2 text-xs text-amber-600">Payment not confirmed. Campaign cannot go live yet.</p>
+                ) : null}
               </>
+            ) : null}
+            {campaign.status === "CANCELLATION_PENDING" ? (
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => setPromptKind("cancel")}
+                className="col-span-2 h-10 rounded-lg bg-amber-600 px-3 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                Credit remaining impressions
+              </button>
             ) : null}
             <button
               type="button"
@@ -321,91 +448,82 @@ function CampaignDrawer({ campaign }: { campaign: CampaignRow }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 border-t border-token p-4 md:grid-cols-2">
-        <form onSubmit={adjustForm.handleSubmit(submitAdjust)} className="space-y-2 rounded-xl border border-token bg-[color:var(--surface-2)] p-3">
-          <div className="text-sm font-semibold tracking-tight">Adjust delivery</div>
-          <p className="text-xs muted">Change view cap or per-view reward. Audit logged.</p>
-          <label className="block text-xs font-semibold muted">View cap</label>
-          <input
-            type="number"
-            inputMode="numeric"
-            {...adjustForm.register("maxViews", { setValueAs: (v) => (v === "" ? null : Number(v)) })}
-            className="h-10 w-full rounded-lg border border-token bg-transparent px-2 text-sm"
-          />
-          <label className="block text-xs font-semibold muted">Reward per view (ZAR)</label>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            {...adjustForm.register("rewardPerView", { setValueAs: (v) => (v === "" ? null : Number(v)) })}
-            className="h-10 w-full rounded-lg border border-token bg-transparent px-2 text-sm"
-          />
-          <label className="block text-xs font-semibold muted">Reason</label>
-          <textarea
-            {...adjustForm.register("reason")}
-            className="min-h-20 w-full rounded-lg border border-token bg-transparent p-2 text-sm"
-            placeholder="Why are you changing this?"
-          />
-          {adjustForm.formState.errors.reason ? (
-            <p className="text-xs text-red-500">{adjustForm.formState.errors.reason.message}</p>
-          ) : null}
-          <button
-            type="submit"
-            disabled={isPending}
-            className="h-10 w-full rounded-lg border border-token px-3 text-sm font-semibold hover:border-[var(--brand-red)] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isPending ? "Saving…" : "Save delivery change"}
-          </button>
-        </form>
+      <div className="grid grid-cols-1 gap-4 border-t border-token p-4 lg:grid-cols-2">
+        {campaign.packageId ? (
+          <form onSubmit={packageForm.handleSubmit(submitPackageAdjust)} className="space-y-2 rounded-xl border border-token bg-[color:var(--surface-2)] p-3">
+            <div className="text-sm font-semibold tracking-tight">Adjust package & impressions</div>
+            <p className="text-xs muted">Change package, purchased/bonus impressions, rider payout, or schedule. Audit logged.</p>
+            <label className="block text-xs font-semibold muted">Package</label>
+            <select
+              {...packageForm.register("packageId")}
+              className="h-10 w-full rounded-lg border border-token bg-transparent px-2 text-sm"
+            >
+              {packages.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <label className="block text-xs font-semibold muted">Impressions purchased</label>
+            <input
+              type="number"
+              {...packageForm.register("impressionsPurchased", { setValueAs: (v) => (v === "" ? undefined : Number(v)) })}
+              className="h-10 w-full rounded-lg border border-token bg-transparent px-2 text-sm"
+            />
+            <label className="block text-xs font-semibold muted">Bonus impressions</label>
+            <input
+              type="number"
+              {...packageForm.register("impressionsBonus", { setValueAs: (v) => (v === "" ? undefined : Number(v)) })}
+              className="h-10 w-full rounded-lg border border-token bg-transparent px-2 text-sm"
+            />
+            <label className="block text-xs font-semibold muted">Rider payout (cents)</label>
+            <input
+              type="number"
+              {...packageForm.register("riderPayoutCents", { setValueAs: (v) => (v === "" ? undefined : Number(v)) })}
+              className="h-10 w-full rounded-lg border border-token bg-transparent px-2 text-sm"
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-semibold muted">Start date</label>
+                <input type="date" {...packageForm.register("startDate")} className="h-10 w-full rounded-lg border border-token bg-transparent px-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold muted">End date</label>
+                <input type="date" {...packageForm.register("endDate")} className="h-10 w-full rounded-lg border border-token bg-transparent px-2 text-sm" />
+              </div>
+            </div>
+            <label className="block text-xs font-semibold muted">Reason</label>
+            <textarea {...packageForm.register("reason")} className="min-h-20 w-full rounded-lg border border-token bg-transparent p-2 text-sm" placeholder="Why are you changing this?" />
+            <button type="submit" disabled={isPending} className="h-10 w-full rounded-lg border border-token px-3 text-sm font-semibold hover:border-[var(--brand-red)] disabled:opacity-50">
+              {isPending ? "Saving…" : "Save package change"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={legacyForm.handleSubmit(submitLegacyAdjust)} className="space-y-2 rounded-xl border border-token bg-[color:var(--surface-2)] p-3">
+            <div className="text-sm font-semibold tracking-tight">Adjust delivery (legacy)</div>
+            <label className="block text-xs font-semibold muted">View cap</label>
+            <input type="number" {...legacyForm.register("maxViews", { setValueAs: (v) => (v === "" ? null : Number(v)) })} className="h-10 w-full rounded-lg border border-token bg-transparent px-2 text-sm" />
+            <label className="block text-xs font-semibold muted">Reward per view (ZAR)</label>
+            <input type="number" step="0.01" {...legacyForm.register("rewardPerView", { setValueAs: (v) => (v === "" ? null : Number(v)) })} className="h-10 w-full rounded-lg border border-token bg-transparent px-2 text-sm" />
+            <label className="block text-xs font-semibold muted">Reason</label>
+            <textarea {...legacyForm.register("reason")} className="min-h-20 w-full rounded-lg border border-token bg-transparent p-2 text-sm" />
+            <button type="submit" disabled={isPending} className="h-10 w-full rounded-lg border border-token px-3 text-sm font-semibold hover:border-[var(--brand-red)] disabled:opacity-50">
+              {isPending ? "Saving…" : "Save delivery change"}
+            </button>
+          </form>
+        )}
 
         <form onSubmit={stopForm.handleSubmit(submitForceStop)} className="space-y-2 rounded-xl border border-red-400/30 bg-red-500/5 p-3">
           <div className="text-sm font-semibold tracking-tight">Force-stop campaign</div>
           <p className="text-xs muted">Use only when the campaign needs to stop now. Advertiser is notified.</p>
-          <label className="block text-xs font-semibold muted">Reason</label>
-          <textarea
-            {...stopForm.register("reason")}
-            className="min-h-20 w-full rounded-lg border border-token bg-transparent p-2 text-sm"
-            placeholder="What happened?"
-          />
-          {stopForm.formState.errors.reason ? (
-            <p className="text-xs text-red-500">{stopForm.formState.errors.reason.message}</p>
-          ) : null}
-          <button
-            type="submit"
-            disabled={isPending || campaign.status === "FORCE_STOPPED"}
-            className="h-10 w-full rounded-lg bg-[var(--brand-red)] px-3 text-sm font-semibold text-white hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          <textarea {...stopForm.register("reason")} className="min-h-20 w-full rounded-lg border border-token bg-transparent p-2 text-sm" placeholder="What happened?" />
+          <button type="submit" disabled={isPending || campaign.status === "FORCE_STOPPED"} className="h-10 w-full rounded-lg bg-[var(--brand-red)] px-3 text-sm font-semibold text-white hover:brightness-95 disabled:opacity-50">
             {pendingLabel === "Force-stopped" ? "Stopping…" : "Force-stop now"}
           </button>
         </form>
       </div>
 
-      <PromptDialog
-        open={promptKind === "pause"}
-        title="Pause this campaign"
-        description="Pausing stops new views immediately. The advertiser sees the reason."
-        label="Why are you pausing it?"
-        placeholder="Short note for the advertiser and audit log"
-        submitLabel="Pause campaign"
-        onClose={() => setPromptKind(null)}
-        onSubmit={async (reason) => {
-          setPromptKind(null)
-          runStatusChange("Paused", "PAUSED", reason)
-        }}
-      />
-      <PromptDialog
-        open={promptKind === "reject"}
-        title="Reject this campaign"
-        description="The advertiser can fix issues and resubmit. They will see your reason."
-        label="Rejection reason"
-        placeholder="What needs to change?"
-        submitLabel="Reject campaign"
-        onClose={() => setPromptKind(null)}
-        onSubmit={async (reason) => {
-          setPromptKind(null)
-          runStatusChange("Rejected", "REJECTED", reason)
-        }}
-      />
+      <PromptDialog open={promptKind === "pause"} title="Pause this campaign" description="Pausing stops new impressions immediately." label="Why are you pausing it?" placeholder="Short note for the advertiser and audit log" submitLabel="Pause campaign" onClose={() => setPromptKind(null)} onSubmit={async (reason) => { setPromptKind(null); runStatusChange("Paused", "PAUSED", reason) }} />
+      <PromptDialog open={promptKind === "reject"} title="Reject this campaign" description="The advertiser can fix issues and resubmit." label="Rejection reason" placeholder="What needs to change?" submitLabel="Reject campaign" onClose={() => setPromptKind(null)} onSubmit={async (reason) => { setPromptKind(null); runStatusChange("Rejected", "REJECTED", reason) }} />
+      <PromptDialog open={promptKind === "cancel"} title="Credit remaining impressions" description="Cancels the campaign and credits unused impressions to the partner balance for a future campaign." label="Admin cancellation reason" placeholder="Why are you crediting this partner?" submitLabel="Credit & cancel" onClose={() => setPromptKind(null)} onSubmit={async (reason) => { setPromptKind(null); creditCancellation(reason) }} />
     </div>
   )
 }

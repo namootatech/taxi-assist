@@ -54,6 +54,7 @@ function groupNav(items: Array<NavItem>) {
     '/ads',
     '/creatives',
     '/trip-media/advertisers',
+    '/trip-media/packages',
     '/trip-media/internal-ads',
     '/trip-media/rider-rewards',
     '/trip-media/fraud',

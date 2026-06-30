@@ -15,6 +15,7 @@ const protectedRoutes: Array<{ prefix: string; capability?: Capability }> = [
   { prefix: '/ads', capability: 'view_ads' },
   { prefix: '/creatives', capability: 'moderate_creatives' },
   { prefix: '/trip-media/overview', capability: 'view_trip_media_overview' },
+  { prefix: '/trip-media/packages', capability: 'manage_ads' },
   { prefix: '/trip-media/internal-ads', capability: 'view_trip_media' },
   { prefix: '/trip-media/advertisers', capability: 'view_advertisers' },
   { prefix: '/trip-media/rider-rewards', capability: 'view_rider_rewards' },

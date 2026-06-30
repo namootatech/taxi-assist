@@ -99,11 +99,16 @@ export const defaultCreativeCategories: Array<CreativeCategory> = [
   { slug: "other", label: "Other" },
 ]
 
+export const defaultRiderPayoutMultiplier = {
+  multiplier: 1.25,
+}
+
 export const tripMediaSettingsKeys = {
   rewardCaps: "reward_caps",
   rejectionReasons: "rejection_reasons",
   riskThresholds: "risk_thresholds",
   watchRules: "watch_rules",
+  riderPayoutMultiplier: "rider_payout_multiplier",
 } as const
 
 export type TripMediaSettingKey = (typeof tripMediaSettingsKeys)[keyof typeof tripMediaSettingsKeys]
