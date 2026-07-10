@@ -1,0 +1,26 @@
+name: Rider App Flutter Tests
+
+on:
+  push:
+    paths:
+      - 'apps/rider_app/**'
+      - '.github/workflows/rider-app-flutter-test.yml'
+  pull_request:
+    paths:
+      - 'apps/rider_app/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/rider_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test

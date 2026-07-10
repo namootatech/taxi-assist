@@ -1,6 +1,6 @@
 {
   "phase": "implementation-ready",
-  "lastUpdated": "2026-05-08",
+  "lastUpdated": "2026-07-09",
   "completed": [
     "apd-resume-normalization-2026-05-07",
     "supporting-documents-folder-rename",
@@ -33,15 +33,16 @@
     "trip-website-rider-updates-cta-fix-2026-05-08",
     "trip-media-web-portal-buildout-2026-05-08",
     "admin-trip-media-buildout-2026-05-08",
-    "clerk-supabase-native-jwt-sub-and-webhook-2026-05-08"
+    "clerk-supabase-native-jwt-sub-and-webhook-2026-05-08",
+    "rider-app-scaffold-and-migrations-2026-07-09",
+    "rider-app-tests-deploy-docs-2026-07-09",
+    "apps-rider-app-scaffold"
   ],
   "pending": [
-    "apps-rider-app-scaffold",
     "expand-admin-user-flows-ui-stubs",
     "expand-driver-user-flows-ui-stubs",
     "reconcile-prompts-to-five-apd-phases-optional",
     "align-global-apd-rules-numbered-vs-kebab-filenames",
-    "rider-trip-request-rls-and-rpc-migrations",
     "storage-bucket-privacy-hardening",
     "admin-next-proxy-migration",
     "replace-driver-placeholder-smoke-test",
@@ -53,7 +54,7 @@
   "apps": {
     "driver_app": "in-progress",
     "admin_app": "in-progress",
-    "rider_app": "planning",
+    "rider_app": "core-complete",
     "trip_media_web": "core-complete",
     "trip_website": "in-progress"
   },

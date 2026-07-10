@@ -6,7 +6,7 @@
 
 | Gap | Severity | Notes |
 |-----|----------|--------|
-| **Rider app** | Medium | **Planning done** (`docs/planning/rider_app/`). Remaining: `apps/rider_app` scaffold, rider trip request RPCs/RLS, wallet/ad tables as in appendix below. |
+| **Rider app** | Low | **`apps/rider_app` MVP** (2026-07-09): Flutter client + `20260709120000_rider_app_core.sql`. Remaining: phone OTP Edge Functions, Payfast card tokenization, live Google Maps native keys. |
 | **APD six-pack per app** | Medium | `admin` and `drivers` each still need `user-roles-and-permissions.md`, `user-flows-and-ux-logic.md`, and `ui-design-system.md` (stubs created in this pass—expand from `app-prd.md`). |
 | **Driver prompts → APD 5-phase** | Low | Eight sequential prompts retained; see `drivers/prompts/INDEX.md` for mapping to foundation → deploy. |
 | **Platform PRD split** | Medium | Single `master-prd.md` / vision docs synthesized; reconcile with `supporting-documents/prd-overview.md` on next edit pass. |
@@ -16,10 +16,11 @@
 
 ### Rider app — implementation gaps (planning)
 
-- **`apps/rider_app`** not in monorepo yet.
-- **Trip request from rider:** RPC or insert path for `trips` as rider-owned action; RLS today may be driver-centric — confirm before rider prompt 03.
-- **`trip_locations`:** rider-initiated location updates need policy design.
-- **Wallets / `ad_views`:** still per appendix below.
+- **`apps/rider_app`** — Flutter client in monorepo (prompts 01–05 MVP, 2026-07-09).
+- ~~**Trip request from rider:**~~ **Closed** — `rider_request_trip`, `rider_cancel_trip`, `rider_rate_completed_trip` + `trips_select_own_rider` in `20260709120000_rider_app_core.sql`.
+- ~~**`trip_locations` rider read:**~~ **Closed** — `trip_locations_select_own_rider_trip` policy (rider SELECT on active trips). Rider-initiated location **writes** remain out of MVP scope.
+- ~~**Wallets / `ad_views`:**~~ **Closed** — `wallets_select_own_rider`, `ad_views_select_own_rider`; credit RPC `record_ad_view_event` already granted to `authenticated`.
+- ~~**Profile / documents / safety / payments:**~~ **Closed** — rider profile columns, `profile_type` trigger/helper, `documents` entity `RIDER`, `emergency_contacts`, `payment_methods`.
 
 ---
 
@@ -107,4 +108,4 @@ Remaining production gaps:
 
 #### 4) Rider trip/wallet/ad execution paths
 
-Rider app remains docs-only. Confirm RLS/RPC design for rider trip requests, rider location writes, wallet consumption, and ad reward crediting before executing rider prompts.
+**Migration `20260709120000_rider_app_core.sql` + `apps/rider_app`** implement rider booking, wallet/ad read, media UI, and shell pages (2026-07-09). Follow-up: rider `trip_locations` writes, phone OTP Edge Functions, production card tokenization (Payfast/Paystack), live maps.

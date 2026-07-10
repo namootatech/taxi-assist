@@ -34,6 +34,7 @@
     "deploy:trip-media-web": "vercel deploy --prod --yes --scope ayabongaqwabis-projects --cwd apps/trip_media_web",
     "deploy:admin": "vercel deploy --prod --yes --scope ayabongaqwabis-projects --cwd apps/admin_app",
     "sync-env:driver": "bash -lc 'cd apps/driver_app && dart run tool/sync_env.dart'",
+    "sync-env:rider": "bash -lc 'cd apps/rider_app && dart run tool/sync_env.dart'",
     "build:driver-apk": "bash -lc 'cd apps/driver_app && dart run tool/sync_env.dart && flutter build apk --release'"
   }
 }
