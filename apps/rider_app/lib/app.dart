@@ -37,8 +37,10 @@ class TaxiAssistRiderApp extends ConsumerWidget {
                   padding: const EdgeInsets.only(right: 10, top: 8),
                   child: Material(
                     color: Colors.transparent,
+                    // No tooltip — MaterialApp.builder sits outside the
+                    // navigator Overlay; Tooltip asserts Overlay and paints a
+                    // full-screen ErrorWidget (the red sheet).
                     child: IconButton(
-                      tooltip: 'Switch theme',
                       onPressed: () =>
                           ref.read(themeModeProvider.notifier).toggle(),
                       icon: const Icon(Icons.brightness_6),
