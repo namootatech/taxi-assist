@@ -4,12 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/constants/app_spacing.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_provider.dart';
+import 'core/utils/app_log.dart';
 import 'core/utils/safe_text.dart';
 import 'features/auth/auth_routing.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
-import 'features/auth/waiting_approval_screen.dart';
-import 'features/profile/document_upload_screen.dart';
+import 'features/marketing/landing_screen.dart';
 import 'shared/models/rider_profile.dart';
 import 'shared/providers/app_providers.dart';
 import 'shared/widgets/main_shell.dart';
@@ -25,6 +25,31 @@ class TaxiAssistRiderApp extends ConsumerWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
+      builder: (context, child) {
+        return Stack(
+          children: [
+            child ?? const SizedBox.shrink(),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 10, top: 8),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: IconButton(
+                      tooltip: 'Switch theme',
+                      onPressed: () =>
+                          ref.read(themeModeProvider.notifier).toggle(),
+                      icon: const Icon(Icons.brightness_6),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
       home: const _AppHome(),
       debugShowCheckedModeBanner: false,
     );
@@ -33,15 +58,19 @@ class TaxiAssistRiderApp extends ConsumerWidget {
 
 Widget _profileDestination(RiderProfile? profile) {
   final dest = resolveDestination(profile);
+  AppLog.d('ui.appHome', 'destination', {
+    'destination': dest.name,
+    'hasProfile': profile != null,
+    'status': profile?.status.name,
+  });
   return switch (dest) {
-    AuthDestination.login => const _Landing(),
-    AuthDestination.mainShell => const MainShell(),
+    AuthDestination.login => const _SignedOutHome(),
+    AuthDestination.mainShell ||
     AuthDestination.waitingApproval ||
-    AuthDestination.pendingVerification =>
-      const WaitingApprovalScreen(),
+    AuthDestination.pendingVerification ||
     AuthDestination.completeRegistration ||
     AuthDestination.documentUpload =>
-      const DocumentUploadScreen(),
+      const MainShell(),
     AuthDestination.accountBlocked => const _AccountBlockedScreen(),
   };
 }
@@ -55,7 +84,7 @@ class _AppHome extends ConsumerWidget {
 
     return authAsync.when(
       data: (auth) {
-        if (auth.session == null) return const _Landing();
+        if (auth.session == null) return const _SignedOutHome();
 
         final profileAsync = ref.watch(currentRiderProvider);
         final cached = profileAsync.valueOrNull;
@@ -94,49 +123,17 @@ class _AppHome extends ConsumerWidget {
   }
 }
 
-class _Landing extends StatelessWidget {
-  const _Landing();
+class _SignedOutHome extends StatelessWidget {
+  const _SignedOutHome();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: AppSpacing.screenPadding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(),
-              Text(
-                'Taxi Assist Rider',
-                style: Theme.of(context).textTheme.headlineLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Book safe, affordable rides across South Africa.',
-                style: Theme.of(context).textTheme.bodyLarge,
-                textAlign: TextAlign.center,
-              ),
-              const Spacer(),
-              FilledButton(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
-                ),
-                child: const Text('Sign in'),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const RegisterScreen(),
-                  ),
-                ),
-                child: const Text('Create account'),
-              ),
-            ],
-          ),
-        ),
+    return LandingScreen(
+      onSignIn: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
+      ),
+      onCreateAccount: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const RegisterScreen()),
       ),
     );
   }

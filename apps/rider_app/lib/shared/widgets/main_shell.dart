@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/theme_mode_provider.dart';
 import '../../features/emergency/emergency_contacts_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/invite/invite_friends_screen.dart';
@@ -44,18 +43,11 @@ class _MainShellState extends ConsumerState<MainShell> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: const Text('Taxi Assist Rider'),
+        title: const Text('Taxi Assist'),
         leading: IconButton(
           icon: const Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Switch theme',
-            onPressed: () => ref.read(themeModeProvider.notifier).toggle(),
-            icon: const Icon(Icons.brightness_6),
-          ),
-        ],
       ),
       drawer: Drawer(
         child: ListView(
@@ -63,11 +55,30 @@ class _MainShellState extends ConsumerState<MainShell> {
           children: [
             DrawerHeader(
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
               ),
-              child: Text(
-                'More',
-                style: Theme.of(context).textTheme.headlineSmall,
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Taxi Assist',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Rider',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             ListTile(

@@ -9,8 +9,9 @@ final themeModeProvider =
   return ThemeModeNotifier();
 });
 
+/// Defaults to dark (same as driver / Trip portal).
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
-  ThemeModeNotifier() : super(ThemeMode.system) {
+  ThemeModeNotifier() : super(ThemeMode.dark) {
     _load();
   }
 

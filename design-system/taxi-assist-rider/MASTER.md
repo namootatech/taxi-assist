@@ -1,5 +1,11 @@
 # Design System Master File
 
+> **Brand sync (2026-07-14):** Rider now shares the **Trip** visual system with the
+> driver app (red `#FE0000`, navy `#244065`, cream `#FFFAF4`, portal dark
+> `#07111F` / `#0D1A2D`). See `docs/design-system/` and
+> `apps/driver_app/lib/core/theme/app_theme.dart`. Landing lives in
+> `apps/rider_app/lib/features/marketing/landing_screen.dart`.
+
 > **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.
 > If that file exists, its rules **override** this Master file.
 > If not, strictly follow the rules below.
@@ -8,7 +14,8 @@
 
 **Project:** Taxi Assist Rider
 **Generated:** 2026-07-09 13:41:05
-**Category:** Banking/Traditional Finance
+**Updated:** 2026-07-14 — Trip brand alignment with driver app
+**Category:** Mobility / Trip platform
 
 ---
 
@@ -18,23 +25,18 @@
 
 | Role | Hex | CSS Variable |
 |------|-----|--------------|
-| Primary | `#2563EB` | `--color-primary` |
-| Secondary | `#3B82F6` | `--color-secondary` |
-| CTA/Accent | `#F97316` | `--color-cta` |
-| Background | `#F8FAFC` | `--color-background` |
-| Text | `#1E293B` | `--color-text` |
+| Primary | `#FE0000` | `--color-primary` |
+| Secondary | `#244065` | `--color-secondary` |
+| Background (light) | `#FFFAF4` | `--color-background` |
+| Surface (light) | `#FFFFFF` | `--color-surface` |
+| Portal background | `#07111F` | `--color-portal-bg` |
+| Portal surface | `#0D1A2D` | `--color-portal-surface` |
+| Text | onSurface from ColorScheme | `--color-text` |
 
 ### Typography
 
-- **Heading Font:** Lexend
-- **Body Font:** Source Sans 3
-- **Mood:** corporate, trustworthy, accessible, readable, professional, clean
-- **Google Fonts:** [Lexend + Source Sans 3](https://fonts.google.com/share?selection.family=Lexend:wght@300;400;500;600;700|Source+Sans+3:wght@300;400;500;600;700)
-
-**CSS Import:**
-```css
-@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
-```
+- **System / Material** with heavy weights (display w900, headlines w800) — same as driver app
+- **Mood:** bold, premium, high-contrast, night-ready
 
 ### Spacing Variables
 
@@ -66,7 +68,7 @@
 ```css
 /* Primary Button */
 .btn-primary {
-  background: #F97316;
+  background: #FE0000;
   color: white;
   padding: 12px 24px;
   border-radius: 8px;
@@ -76,18 +78,17 @@
 }
 
 .btn-primary:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
+  filter: brightness(0.92);
 }
 
 /* Secondary Button */
 .btn-secondary {
   background: transparent;
-  color: #2563EB;
-  border: 2px solid #2563EB;
+  color: #244065;
+  border: 2px solid #244065;
   padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 14px;
+  font-weight: 700;
   transition: all 200ms ease;
   cursor: pointer;
 }
@@ -97,17 +98,11 @@
 
 ```css
 .card {
-  background: #F8FAFC;
-  border-radius: 12px;
+  background: #FFFFFF;
+  border-radius: 18px;
   padding: 24px;
-  box-shadow: var(--shadow-md);
-  transition: all 200ms ease;
-  cursor: pointer;
-}
-
-.card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
+  box-shadow: none;
+  border: 1px solid rgba(36, 64, 101, 0.08);
 }
 ```
 
@@ -116,16 +111,16 @@
 ```css
 .input {
   padding: 12px 16px;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
+  border: 1px solid rgba(36, 64, 101, 0.16);
+  border-radius: 14px;
   font-size: 16px;
   transition: border-color 200ms ease;
 }
 
 .input:focus {
-  border-color: #2563EB;
+  border-color: #FE0000;
   outline: none;
-  box-shadow: 0 0 0 3px #2563EB20;
+  box-shadow: 0 0 0 3px rgba(254, 0, 0, 0.16);
 }
 ```
 
