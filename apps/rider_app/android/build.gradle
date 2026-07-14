@@ -5,6 +5,24 @@ allprojects {
     }
 }
 
+// Transitive Android libraries (e.g. package:jni from sentry_flutter) reference
+// `flutter.ndkVersion` inside android {}, but are plain library projects where
+// the Flutter extension does not exist. Provide a minimal shim for those builds.
+def flutterShim = [
+    compileSdkVersion: 36,
+    minSdkVersion: 23,
+    targetSdkVersion: 36,
+    ndkVersion: "27.1.12297006",
+]
+
+gradle.beforeProject { project ->
+    // Do not overwrite the real FlutterExtension on :app.
+    if (project.name == "app") return
+    if (!project.ext.has("flutter")) {
+        project.ext.flutter = flutterShim
+    }
+}
+
 rootProject.buildDir = "../build"
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"

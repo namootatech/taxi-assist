@@ -34,8 +34,32 @@ Future<void> main(List<String> args) async {
   final outputFile = File(outputPath);
   await outputFile.parent.create(recursive: true);
   await outputFile.writeAsString(normalized);
-
   stdout.writeln('Wrote $outputPath from $inputPath');
+
+  final mapsKey = (parsed['GOOGLE_MAPS_API_KEY'] ?? '').trim();
+  await _writeAndroidMapsKey(mapsKey);
+}
+
+Future<void> _writeAndroidMapsKey(String mapsKey) async {
+  final dir = Directory('android/app/src/main/res/values');
+  await dir.create(recursive: true);
+  final file = File('${dir.path}/google_maps_api.xml');
+  final safe = mapsKey
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;');
+  await file.writeAsString('''
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="google_maps_api_key" translatable="false">$safe</string>
+</resources>
+''');
+  stdout.writeln(
+    mapsKey.isEmpty || mapsKey.contains('your_maps')
+        ? 'Wrote android google_maps_api.xml (empty/placeholder — maps will fail until set)'
+        : 'Wrote android google_maps_api.xml from GOOGLE_MAPS_API_KEY',
+  );
 }
 
 String? _readArg(List<String> args, String key) {
