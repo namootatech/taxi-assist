@@ -3,15 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../core/constants/app_spacing.dart';
+import '../../core/utils/app_log.dart';
 import '../../core/utils/toast.dart';
 import '../../shared/providers/app_providers.dart';
 
 /// Taxi Assist Media — full-screen ad surface with abandon warning.
 class AdPlaybackScreen extends ConsumerStatefulWidget {
-  const AdPlaybackScreen({super.key, required this.tripId, this.campaignId});
+  const AdPlaybackScreen({
+    super.key,
+    required this.tripId,
+    this.campaignId,
+    this.videoUrl,
+    this.advertiser,
+  });
 
   final String tripId;
   final String? campaignId;
+  final String? videoUrl;
+  final String? advertiser;
 
   @override
   ConsumerState<AdPlaybackScreen> createState() => _AdPlaybackScreenState();
@@ -24,6 +33,9 @@ class _AdPlaybackScreenState extends ConsumerState<AdPlaybackScreen> {
   final _comment = TextEditingController();
   var _phase = _AdPhase.intro;
 
+  static const _fallbackVideo =
+      'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4';
+
   @override
   void dispose() {
     _controller?.dispose();
@@ -32,23 +44,23 @@ class _AdPlaybackScreenState extends ConsumerState<AdPlaybackScreen> {
   }
 
   Future<void> _recordEvent(String event) async {
-    final uid = ref.read(supabaseClientProvider).auth.currentUser?.id;
-    if (uid == null) return;
     final campaignId = widget.campaignId;
-    if (campaignId == null) return;
-
-    await ref.read(supabaseClientProvider).rpc(
-      'record_ad_view_event',
-      params: {
-        'p_trip_id': widget.tripId,
-        'p_rider_id': uid,
-        'p_campaign_id': campaignId,
-        'p_event': event,
-        'p_watched_seconds': _watchedSeconds,
-        'p_rating': event == 'COMPLETED' ? _rating : null,
-        'p_comment': event == 'COMPLETED' ? _comment.text : null,
-      },
-    );
+    if (campaignId == null) {
+      AppLog.w('ui.adPlayback', 'skip_record_no_campaign', {'event': event});
+      return;
+    }
+    try {
+      await ref.read(supabaseServiceProvider).recordAdViewEvent(
+            tripId: widget.tripId,
+            campaignId: campaignId,
+            event: event,
+            watchedSeconds: _watchedSeconds,
+            rating: event == 'COMPLETED' ? _rating : null,
+            comment: event == 'COMPLETED' ? _comment.text : null,
+          );
+    } catch (e, st) {
+      AppLog.e('ui.adPlayback', 'record_failed', error: e, stackTrace: st);
+    }
   }
 
   Future<bool> _onWillPop() async {
@@ -60,8 +72,12 @@ class _AdPlaybackScreenState extends ConsumerState<AdPlaybackScreen> {
           'Leaving before completion means no wallet credit.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Stay')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Leave')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Stay')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Leave')),
         ],
       ),
     );
@@ -75,22 +91,37 @@ class _AdPlaybackScreenState extends ConsumerState<AdPlaybackScreen> {
     setState(() => _phase = _AdPhase.playback);
     await _recordEvent('STARTED');
 
-    _controller = VideoPlayerController.networkUrl(
-      Uri.parse('https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'),
-    );
+    final url = (widget.videoUrl != null &&
+            widget.videoUrl!.startsWith('http'))
+        ? widget.videoUrl!
+        : _fallbackVideo;
+    AppLog.i('ui.adPlayback', 'play', {'urlHost': Uri.tryParse(url)?.host});
+
+    _controller = VideoPlayerController.networkUrl(Uri.parse(url));
     try {
       await _controller!.initialize();
       await _controller!.play();
       _controller!.addListener(() {
         if (_controller!.value.isPlaying && mounted) {
-          setState(() => _watchedSeconds = _controller!.value.position.inSeconds);
+          setState(
+              () => _watchedSeconds = _controller!.value.position.inSeconds);
+        }
+        if (_controller!.value.position >= _controller!.value.duration &&
+            mounted &&
+            _phase == _AdPhase.playback) {
+          setState(() => _phase = _AdPhase.rate);
         }
       });
-    } catch (_) {
+    } catch (e, st) {
+      AppLog.e('ui.adPlayback', 'video_failed', error: e, stackTrace: st);
       await Future<void>.delayed(const Duration(seconds: 3));
-      if (mounted) setState(() => _watchedSeconds = 5);
+      if (mounted) {
+        setState(() {
+          _watchedSeconds = 5;
+          _phase = _AdPhase.rate;
+        });
+      }
     }
-    if (mounted) setState(() => _phase = _AdPhase.rate);
   }
 
   Future<void> _complete() async {
@@ -99,7 +130,10 @@ class _AdPlaybackScreenState extends ConsumerState<AdPlaybackScreen> {
       return;
     }
     await _recordEvent('COMPLETED');
-    if (mounted) Navigator.of(context).pop();
+    if (mounted) {
+      showAppToast('Thanks — credit will land after the trip');
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -117,7 +151,10 @@ class _AdPlaybackScreenState extends ConsumerState<AdPlaybackScreen> {
           child: Padding(
             padding: AppSpacing.screenPadding,
             child: switch (_phase) {
-              _AdPhase.intro => _Intro(onStart: _startPlayback),
+              _AdPhase.intro => _Intro(
+                  advertiser: widget.advertiser,
+                  onStart: _startPlayback,
+                ),
               _AdPhase.playback => _Playback(
                   controller: _controller,
                   watchedSeconds: _watchedSeconds,
@@ -140,9 +177,10 @@ class _AdPlaybackScreenState extends ConsumerState<AdPlaybackScreen> {
 enum _AdPhase { intro, playback, rate }
 
 class _Intro extends StatelessWidget {
-  const _Intro({required this.onStart});
+  const _Intro({required this.onStart, this.advertiser});
 
   final VoidCallback onStart;
+  final String? advertiser;
 
   @override
   Widget build(BuildContext context) {
@@ -153,14 +191,20 @@ class _Intro extends StatelessWidget {
         const Icon(Icons.play_circle_outline, size: 72, color: Colors.white),
         const SizedBox(height: 16),
         Text(
-          'Taxi Assist Media',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
+          advertiser ?? 'Taxi Assist Media',
+          style: Theme.of(context)
+              .textTheme
+              .headlineSmall
+              ?.copyWith(color: Colors.white),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
         Text(
           'Watch a short ad to earn wallet credit on this trip.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(color: Colors.white70),
           textAlign: TextAlign.center,
         ),
         const Spacer(),
@@ -200,7 +244,8 @@ class _Playback extends StatelessWidget {
         ),
         TextButton(
           onPressed: watchedSeconds >= 5 ? onSkip : null,
-          child: const Text('Continue', style: TextStyle(color: Colors.white)),
+          child:
+              const Text('Continue', style: TextStyle(color: Colors.white)),
         ),
       ],
     );
@@ -227,7 +272,10 @@ class _RateGate extends StatelessWidget {
       children: [
         Text(
           'Rate this ad',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(color: Colors.white),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
