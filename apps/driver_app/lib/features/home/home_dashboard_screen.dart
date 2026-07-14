@@ -210,9 +210,24 @@ class _HomeDashboardScreenState extends ConsumerState<HomeDashboardScreen> {
                           const SizedBox(height: 8),
                           FilledButton(
                             onPressed: () {
-                              ref.read(mainShellTabIndexProvider.notifier).state = 3;
+                              final needsProfile = blockers.any(
+                                (r) =>
+                                    r.toLowerCase().contains('cellphone') ||
+                                    r.toLowerCase().contains('profile photo') ||
+                                    r.toLowerCase().contains('selfie'),
+                              );
+                              ref.read(mainShellTabIndexProvider.notifier).state =
+                                  needsProfile ? 2 : 3;
                             },
-                            child: const Text('Fix documents'),
+                            child: Text(
+                              blockers.any(
+                                (r) =>
+                                    r.toLowerCase().contains('cellphone') ||
+                                    r.toLowerCase().contains('profile photo'),
+                              )
+                                  ? 'Open Profile'
+                                  : 'Fix documents',
+                            ),
                           ),
                         ],
                       ),

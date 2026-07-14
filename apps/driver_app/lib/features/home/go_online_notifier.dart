@@ -39,6 +39,18 @@ class GoOnlineNotifier extends StateNotifier<GoOnlineUiState> {
   Future<void> goOnline() async {
     state = state.copyWith(busy: true, clearReasons: true);
     try {
+      final profile = await _ref.read(currentDriverProvider.future);
+      if (profile != null && !profile.canTakeTrips) {
+        final reason = profile.tripsBlockedReason ??
+            'Add a profile photo and cellphone before going online.';
+        state = state.copyWith(
+          busy: false,
+          lastPrecheckReasons: [reason],
+        );
+        showAppToast(reason, long: true);
+        return;
+      }
+
       final loc = await Permission.locationWhenInUse.request();
       if (!loc.isGranted) {
         showAppToast(

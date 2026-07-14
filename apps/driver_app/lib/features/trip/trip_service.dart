@@ -9,6 +9,7 @@ import '../../shared/providers/app_providers.dart';
 import '../../shared/services/supabase_service.dart';
 import 'models/location_point.dart';
 import 'models/trip.dart';
+import 'models/trip_rider_details.dart';
 
 class _QueuedLocation {
   _QueuedLocation({
@@ -82,6 +83,10 @@ class TripService {
   /// Realtime subscription for incoming / updated trips (alias of [watchActiveTrip]).
   Stream<Trip?> listenForRideRequests(String driverId) => watchActiveTrip(driverId);
 
+  /// Active lifecycle trip, or a just-completed trip still awaiting driver rating.
+  ///
+  /// Keeping unrated COMPLETED trips avoids tearing down the map mid–rating
+  /// dialog (which previously crashed the app on "End trip").
   Future<Trip?> fetchActiveTrip(String driverId) async {
     final rows = await _client
         .from('trips')
@@ -92,8 +97,28 @@ class TripService {
         .limit(1);
 
     final list = rows as List<dynamic>;
-    if (list.isEmpty) return null;
-    return Trip.fromJson(Map<String, dynamic>.from(list.first as Map));
+    if (list.isNotEmpty) {
+      return Trip.fromJson(Map<String, dynamic>.from(list.first as Map));
+    }
+
+    final cutoff = DateTime.now()
+        .toUtc()
+        .subtract(const Duration(hours: 24))
+        .toIso8601String();
+
+    final pending = await _client
+        .from('trips')
+        .select()
+        .eq('driver_id', driverId)
+        .eq('status', 'COMPLETED')
+        .isFilter('driver_rating', null)
+        .gte('completed_at', cutoff)
+        .order('completed_at', ascending: false)
+        .limit(1);
+
+    final pendingList = pending as List<dynamic>;
+    if (pendingList.isEmpty) return null;
+    return Trip.fromJson(Map<String, dynamic>.from(pendingList.first as Map));
   }
 
   Future<Map<String, dynamic>> _rpc(
@@ -196,6 +221,22 @@ class TripService {
     if (res['ok'] != true) {
       throw TripStateException('${res['error'] ?? res}');
     }
+  }
+
+  /// Rider card for a trip assigned to this driver (`driver_get_trip_rider`).
+  Future<TripRiderDetails?> fetchTripRider(String tripId) async {
+    final raw = await _client.rpc(
+      'driver_get_trip_rider',
+      params: {'p_trip_id': tripId},
+    );
+    final res = Map<String, dynamic>.from(raw as Map);
+    if (res['ok'] != true) {
+      throw TripStateException('${res['error'] ?? res}');
+    }
+    if (res['assigned'] != true || res['rider'] == null) return null;
+    return TripRiderDetails.fromJson(
+      Map<String, dynamic>.from(res['rider'] as Map),
+    );
   }
 
   Future<void> updateDriverLocation(

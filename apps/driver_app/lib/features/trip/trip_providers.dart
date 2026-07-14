@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../shared/providers/app_providers.dart';
 import 'models/trip.dart';
+import 'models/trip_rider_details.dart';
 import 'trip_service.dart';
 
 final tripServiceProvider = Provider<TripService>((ref) => TripService(ref));
@@ -15,6 +16,12 @@ final currentTripProvider = StreamProvider.autoDispose<Trip?>((ref) {
     return const Stream<Trip?>.empty();
   }
   return ref.watch(tripServiceProvider).watchActiveTrip(uid);
+});
+
+/// Rider details for a trip (`driver_get_trip_rider`).
+final tripRiderDetailsProvider =
+    FutureProvider.autoDispose.family<TripRiderDetails?, String>((ref, tripId) {
+  return ref.watch(tripServiceProvider).fetchTripRider(tripId);
 });
 
 /// GoogleMap controller set from `onMapCreated` (trip map).

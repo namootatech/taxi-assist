@@ -65,6 +65,31 @@ class DriverProfile {
   /// After full onboarding wizard submit; drives routing while status is pending.
   final bool registrationSubmitted;
 
+  bool get hasCellphone {
+    final phone = cellphone?.trim() ?? '';
+    return phone.length >= 9;
+  }
+
+  bool get hasProfilePhoto {
+    final url = selfieUrl?.trim() ?? '';
+    return url.isNotEmpty;
+  }
+
+  /// Profile photo + cellphone only. Full go-online rules still live in
+  /// `driver_precheck_go_online` (approval, training, vehicle, docs).
+  bool get canTakeTrips => hasCellphone && hasProfilePhoto;
+
+  String? get tripsBlockedReason {
+    final missing = <String>[];
+    if (!hasProfilePhoto) missing.add('a profile photo');
+    if (!hasCellphone) missing.add('a cellphone number');
+    if (missing.isEmpty) return null;
+    if (missing.length == 1) {
+      return 'Add ${missing.first} in Profile before you can take trips.';
+    }
+    return 'Add ${missing.join(' and ')} in Profile before you can take trips.';
+  }
+
   factory DriverProfile.fromJson(Map<String, dynamic> json) {
     Map<String, dynamic>? bankJson;
     final bankRaw = json['bank_details'];

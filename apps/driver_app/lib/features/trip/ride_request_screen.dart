@@ -7,6 +7,7 @@ import '../../core/constants/app_spacing.dart';
 import '../../core/utils/toast.dart';
 import 'models/trip.dart';
 import 'trip_providers.dart';
+import 'widgets/trip_rider_card.dart';
 
 /// Incoming REQUESTED trip (PRD §5.4).
 class RideRequestScreen extends ConsumerStatefulWidget {
@@ -60,12 +61,12 @@ class _RideRequestScreenState extends ConsumerState<RideRequestScreen> {
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 12),
+          TripRiderCard(tripId: trip.tripId),
+          const SizedBox(height: 12),
           _row('Pickup', trip.pickupAddress ?? '—'),
           _row('Drop-off', trip.dropoffAddress ?? '—'),
           _row('Est. fare', est),
           _row('Est. time', eta),
-          _row('Rider', trip.riderDisplayName ?? 'Rider'),
-          _row('Verified', trip.riderVerified ? 'Yes' : 'No'),
           _row('Payment', trip.paymentMethodLabel),
           const SizedBox(height: 12),
           SizedBox(
@@ -115,7 +116,9 @@ class _RideRequestScreenState extends ConsumerState<RideRequestScreen> {
                       : () async {
                           setState(() => _busy = true);
                           try {
-                            await ref.read(tripServiceProvider).declineTrip(trip.tripId);
+                            await ref
+                                .read(tripServiceProvider)
+                                .declineTrip(trip.tripId);
                           } catch (e) {
                             showAppToast('$e', long: true);
                           } finally {
@@ -133,8 +136,13 @@ class _RideRequestScreenState extends ConsumerState<RideRequestScreen> {
                       : () async {
                           setState(() => _busy = true);
                           try {
-                            await ref.read(tripServiceProvider).acceptTrip(trip.tripId);
+                            await ref
+                                .read(tripServiceProvider)
+                                .acceptTrip(trip.tripId);
                             showAppToast('Accepted — head to pickup');
+                            ref.invalidate(
+                              tripRiderDetailsProvider(trip.tripId),
+                            );
                           } catch (e) {
                             showAppToast('$e', long: true);
                           } finally {
@@ -161,7 +169,9 @@ class _RideRequestScreenState extends ConsumerState<RideRequestScreen> {
             width: 100,
             child: Text(
               k,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           Expanded(child: Text(v)),
