@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_spacing.dart';
+import '../../core/utils/app_log.dart';
 import '../../core/utils/toast.dart';
+import '../../shared/providers/app_providers.dart';
 import 'models/trip.dart';
 import 'trip_service.dart';
 
@@ -21,12 +23,40 @@ class _PostTripScreenState extends ConsumerState<PostTripScreen> {
   final _tip = TextEditingController();
   var _loading = false;
   var _submitted = false;
+  double _adEarnings = 0;
+  var _earningsLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _finalizeAds();
+  }
 
   @override
   void dispose() {
     _comment.dispose();
     _tip.dispose();
     super.dispose();
+  }
+
+  Future<void> _finalizeAds() async {
+    try {
+      final res = await ref
+          .read(supabaseServiceProvider)
+          .finalizeTripAdRewards(widget.trip.tripId);
+      final total = res['total_amount'];
+      if (mounted) {
+        setState(() {
+          _adEarnings = total is num ? total.toDouble() : 0;
+          _earningsLoaded = true;
+        });
+        ref.invalidate(riderWalletProvider);
+      }
+      AppLog.i('ui.postTrip', 'ads_finalized', {'total': total});
+    } catch (e, st) {
+      AppLog.e('ui.postTrip', 'ads_finalize_failed', error: e, stackTrace: st);
+      if (mounted) setState(() => _earningsLoaded = true);
+    }
   }
 
   Future<void> _submit() async {
@@ -58,21 +88,33 @@ class _PostTripScreenState extends ConsumerState<PostTripScreen> {
       return Scaffold(
         appBar: AppBar(title: const Text('Trip complete')),
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.check_circle_outline, size: 64),
-              const SizedBox(height: 16),
-              Text(
-                'Fare: R${widget.trip.finalFare?.toStringAsFixed(2) ?? widget.trip.estimatedFare?.toStringAsFixed(2) ?? '—'}',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () => ref.invalidate(currentTripProvider),
-                child: const Text('Done'),
-              ),
-            ],
+          child: Padding(
+            padding: AppSpacing.screenPadding,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.check_circle_outline, size: 64),
+                const SizedBox(height: 16),
+                Text(
+                  'Fare: R${widget.trip.finalFare?.toStringAsFixed(2) ?? widget.trip.estimatedFare?.toStringAsFixed(2) ?? '—'}',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                if (_adEarnings > 0) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Ad credits earned: +R${_adEarnings.toStringAsFixed(2)}',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.green.shade700,
+                        ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: () => ref.invalidate(currentTripProvider),
+                  child: const Text('Done'),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -89,6 +131,21 @@ class _PostTripScreenState extends ConsumerState<PostTripScreen> {
               'Fare: R${widget.trip.finalFare?.toStringAsFixed(2) ?? widget.trip.estimatedFare?.toStringAsFixed(2) ?? '—'}',
               style: Theme.of(context).textTheme.titleLarge,
             ),
+            if (_earningsLoaded && _adEarnings > 0) ...[
+              const SizedBox(height: 8),
+              Card(
+                color: Theme.of(context).colorScheme.secondaryContainer,
+                child: ListTile(
+                  leading: const Icon(Icons.savings_outlined),
+                  title: const Text('Taxi Assist Media'),
+                  subtitle: const Text('Credited to your wallet'),
+                  trailing: Text(
+                    '+R${_adEarnings.toStringAsFixed(2)}',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             Text('Rating', style: Theme.of(context).textTheme.titleMedium),
             Row(
