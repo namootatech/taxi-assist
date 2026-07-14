@@ -325,19 +325,155 @@ export default async function VerificationPage({
       return { ok: false as const, error: userFacingError(updateErr) };
     }
 
+    // Approve linked vehicles that have no pending docs (go-online requires
+    // vehicles.status = APPROVED, not just approved vehicle documents).
+    const vehicleIdsToApprove = vehicleIds.filter((vid) => {
+      const vehicleDocs = docs.filter(
+        (d) =>
+          String(d.entity_type ?? '').toUpperCase() === 'VEHICLE' &&
+          d.entity_id === vid,
+      );
+      if (!vehicleDocs.length) return false;
+      return !vehicleDocs.some(
+        (d) => String(d.status ?? '').toUpperCase() === 'PENDING',
+      );
+    });
+
+    if (vehicleIdsToApprove.length) {
+      const { error: vehiclesUpdateErr } = await supabase
+        .from('vehicles')
+        .update({
+          status: 'APPROVED',
+          rejection_reason: null,
+          rejected_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .in('vehicle_id', vehicleIdsToApprove);
+
+      if (vehiclesUpdateErr) {
+        console.error('[approveDriver] Vehicle approval failed', {
+          targetDriverId,
+          vehicleIdsToApprove,
+          vehiclesUpdateErr,
+        });
+        return {
+          ok: false as const,
+          error: userFacingError(vehiclesUpdateErr),
+        };
+      }
+
+      for (const vid of vehicleIdsToApprove) {
+        await supabase.rpc('admin_audit_log', {
+          p_action: 'vehicle.approve',
+          p_entity_type: 'vehicles',
+          p_entity_id: vid,
+          p_reason: reason,
+          p_metadata: { via: 'driver.approve', driver_id: targetDriverId },
+        });
+      }
+    }
+
     await supabase.rpc('admin_audit_log', {
       p_action: 'driver.approve',
       p_entity_type: 'profiles',
       p_entity_id: targetDriverId,
       p_reason: reason,
-      p_metadata: {},
+      p_metadata: { approved_vehicle_ids: vehicleIdsToApprove },
     });
 
     console.log('[approveDriver] Success', {
       targetDriverId,
       vehicleIdsCount: vehicleIds.length,
+      approvedVehicleIdsCount: vehicleIdsToApprove.length,
       docsCount: docs.length,
     });
+    return { ok: true as const };
+  }
+
+  async function decideVehicle(formData: FormData) {
+    'use server';
+    const vehicleId = String(formData.get('vehicle_id') ?? '');
+    const decision = String(formData.get('decision') ?? '').toUpperCase();
+    const reason = String(formData.get('reason') ?? '').trim();
+
+    if (!vehicleId || (decision !== 'APPROVED' && decision !== 'REJECTED')) {
+      return { ok: false as const, error: 'Invalid request' };
+    }
+    if (!reason) {
+      return { ok: false as const, error: 'Reason is required' };
+    }
+
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userErr,
+    } = await supabase.auth.getUser();
+    if (userErr || !user) {
+      return { ok: false as const, error: 'Not authenticated' };
+    }
+
+    if (decision === 'APPROVED') {
+      const { data: vehicleDocs, error: docsErr } = await supabase
+        .from('documents')
+        .select('document_id, status')
+        .eq('entity_type', 'VEHICLE')
+        .eq('entity_id', vehicleId);
+
+      if (docsErr) {
+        return { ok: false as const, error: userFacingError(docsErr) };
+      }
+
+      const docs = vehicleDocs ?? [];
+      if (!docs.length) {
+        return {
+          ok: false as const,
+          error: 'Vehicle has no documents to review',
+        };
+      }
+
+      const pendingCount = docs.filter(
+        (d) => String(d.status ?? '').toUpperCase() === 'PENDING',
+      ).length;
+      if (pendingCount > 0) {
+        return {
+          ok: false as const,
+          error: `You still have ${pendingCount} pending vehicle document(s). Review them first.`,
+        };
+      }
+    }
+
+    const nowIso = new Date().toISOString();
+    const { error: updateErr } = await supabase
+      .from('vehicles')
+      .update(
+        decision === 'APPROVED'
+          ? {
+              status: 'APPROVED',
+              rejection_reason: null,
+              rejected_at: null,
+              updated_at: nowIso,
+            }
+          : {
+              status: 'REJECTED',
+              rejection_reason: reason,
+              rejected_at: nowIso,
+              updated_at: nowIso,
+            },
+      )
+      .eq('vehicle_id', vehicleId);
+
+    if (updateErr) {
+      return { ok: false as const, error: userFacingError(updateErr) };
+    }
+
+    await supabase.rpc('admin_audit_log', {
+      p_action: decision === 'APPROVED' ? 'vehicle.approve' : 'vehicle.reject',
+      p_entity_type: 'vehicles',
+      p_entity_id: vehicleId,
+      p_reason: reason,
+      p_metadata: {},
+    });
+
     return { ok: true as const };
   }
 
@@ -560,6 +696,7 @@ export default async function VerificationPage({
         cases={cases}
         reviewAction={review}
         approveDriverAction={approveDriver}
+        decideVehicleAction={decideVehicle}
         initialDriverId={driverId ?? null}
       />
     </div>

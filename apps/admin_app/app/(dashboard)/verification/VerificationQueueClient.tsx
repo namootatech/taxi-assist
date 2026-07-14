@@ -236,12 +236,14 @@ export function VerificationQueueClient({
   effectiveStatus,
   reviewAction,
   approveDriverAction,
+  decideVehicleAction,
   initialDriverId,
 }: {
   cases: Array<DriverVerificationCase>;
   effectiveStatus: string;
   reviewAction: (formData: FormData) => Promise<{ ok: true } | { ok: false; error: string }>;
   approveDriverAction: (formData: FormData) => Promise<{ ok: true } | { ok: false; error: string }>;
+  decideVehicleAction: (formData: FormData) => Promise<{ ok: true } | { ok: false; error: string }>;
   initialDriverId: string | null;
 }) {
   const router = useRouter();
@@ -256,6 +258,7 @@ export function VerificationQueueClient({
   const [expiryOnly, setExpiryOnly] = useState(false);
   const [selectedDocId, setSelectedDocId] = useState<string>(() => firstDocId(initialCase));
   const [approveReason, setApproveReason] = useState("");
+  const [vehicleReasons, setVehicleReasons] = useState<Record<string, string>>({});
 
   const selectedCase = useMemo(
     () => cases.find((c) => c.driver_id === selectedDriverId) ?? null,
@@ -335,8 +338,39 @@ export function VerificationQueueClient({
         toast.error(res.error);
         return;
       }
-      toast.success("Driver approved");
+      toast.success("Driver and eligible vehicles approved");
       setApproveReason("");
+      router.refresh();
+    });
+  }
+
+  async function handleDecideVehicle(
+    vehicleId: string,
+    decision: "APPROVED" | "REJECTED",
+    reason: string,
+  ) {
+    const trimmed = reason.trim();
+    if (!trimmed) {
+      toast.error("Reason is required");
+      return;
+    }
+
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("vehicle_id", vehicleId);
+      fd.set("decision", decision);
+      fd.set("reason", trimmed);
+      const res = await decideVehicleAction(fd);
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success(decision === "APPROVED" ? "Vehicle approved" : "Vehicle rejected");
+      setVehicleReasons((prev) => {
+        const next = { ...prev };
+        delete next[vehicleId];
+        return next;
+      });
       router.refresh();
     });
   }
@@ -585,13 +619,24 @@ export function VerificationQueueClient({
 
               <div className="mt-3 rounded-xl border border-token p-4">
                 <div className="text-sm font-semibold tracking-tight">Vehicle details</div>
-                <div className="mt-1 text-xs muted">Linked vehicles and ownership information</div>
+                <div className="mt-1 text-xs muted">
+                  Linked vehicles and ownership information. Approve the vehicle entity after its documents are reviewed — drivers cannot go online while the vehicle stays pending.
+                </div>
 
                 <div className="mt-3 space-y-3">
                   {selectedCase.vehicles.length ? (
                     selectedCase.vehicles.map((v) => {
                       const ownerDetails = safeObj(v.owner_details);
                       const companyDetails = safeObj(v.company_details);
+                      const docs = selectedCase.vehicleDocsByVehicleId[v.vehicle_id] ?? [];
+                      const pendingDocs = docs.filter((d) => d.status === "PENDING").length;
+                      const vehicleStatus = (v.status ?? "").toUpperCase();
+                      const vehicleReason = vehicleReasons[v.vehicle_id] ?? "";
+                      const trimmedVehicleReason = vehicleReason.trim();
+                      const canApproveVehicle =
+                        docs.length > 0 && pendingDocs === 0 && vehicleStatus !== "APPROVED" && !isPending;
+                      const canRejectVehicle = vehicleStatus !== "REJECTED" && !isPending;
+
                       return (
                         <div key={v.vehicle_id} className="rounded-xl border border-token bg-black/2 p-3">
                           <div className="flex items-start justify-between gap-3">
@@ -602,9 +647,21 @@ export function VerificationQueueClient({
                                 {v.category ?? "—"} • {v.status ?? "—"}
                               </div>
                             </div>
-                            {v.speedometer_reading !== null && v.speedometer_reading !== undefined ? (
-                              <StatusChip label={`${v.speedometer_reading.toLocaleString()} km`} tone="muted" />
-                            ) : null}
+                            <div className="flex shrink-0 flex-col items-end gap-1">
+                              <StatusChip
+                                label={(v.status ?? "—").toLowerCase()}
+                                tone={
+                                  vehicleStatus === "APPROVED"
+                                    ? "ok"
+                                    : vehicleStatus === "REJECTED" || vehicleStatus === "SUSPENDED"
+                                      ? "danger"
+                                      : "warn"
+                                }
+                              />
+                              {v.speedometer_reading !== null && v.speedometer_reading !== undefined ? (
+                                <StatusChip label={`${v.speedometer_reading.toLocaleString()} km`} tone="muted" />
+                              ) : null}
+                            </div>
                           </div>
 
                           <div className="mt-3 grid grid-cols-2 gap-2 text-xs muted">
@@ -669,6 +726,56 @@ export function VerificationQueueClient({
                               </div>
                             </div>
                           ) : null}
+
+                          <div className="mt-3 space-y-2 rounded-lg border border-token bg-[var(--surface-1)] p-3">
+                            <div className="flex items-center justify-between text-xs">
+                              <div className="font-semibold muted">Vehicle decision</div>
+                              <div className="font-semibold">
+                                {pendingDocs}/{docs.length} pending docs
+                              </div>
+                            </div>
+                            <textarea
+                              value={vehicleReason}
+                              onChange={(e) =>
+                                setVehicleReasons((prev) => ({
+                                  ...prev,
+                                  [v.vehicle_id]: e.target.value,
+                                }))
+                              }
+                              placeholder="Reason (required)…"
+                              className="min-h-[72px] w-full resize-none rounded-lg border border-token bg-transparent px-3 py-2 text-sm"
+                              disabled={isPending}
+                              aria-label={`Vehicle decision reason for ${vehicleLabel(v)}`}
+                            />
+                            {!trimmedVehicleReason ? (
+                              <div className="text-xs text-[var(--brand-red)]">Reason is required.</div>
+                            ) : null}
+                            {docs.length === 0 ? (
+                              <div className="text-xs muted">Upload/review vehicle documents before approving.</div>
+                            ) : pendingDocs > 0 ? (
+                              <div className="text-xs muted">Approve or decline pending vehicle documents first.</div>
+                            ) : null}
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                disabled={!canApproveVehicle || !trimmedVehicleReason}
+                                className="h-10 rounded-lg bg-[var(--brand-navy-900)] text-sm font-semibold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                                onClick={() => handleDecideVehicle(v.vehicle_id, "APPROVED", trimmedVehicleReason)}
+                                aria-label={`Approve vehicle ${vehicleLabel(v)}`}
+                              >
+                                Approve vehicle
+                              </button>
+                              <button
+                                type="button"
+                                disabled={!canRejectVehicle || !trimmedVehicleReason}
+                                className="h-10 rounded-lg border border-token bg-transparent text-sm font-semibold text-[var(--brand-red)] hover:bg-[var(--brand-red)]/5 disabled:cursor-not-allowed disabled:opacity-60"
+                                onClick={() => handleDecideVehicle(v.vehicle_id, "REJECTED", trimmedVehicleReason)}
+                                aria-label={`Reject vehicle ${vehicleLabel(v)}`}
+                              >
+                                Reject vehicle
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       );
                     })
@@ -725,7 +832,8 @@ export function VerificationQueueClient({
                 <div className="text-sm font-semibold tracking-tight">Approve driver</div>
                 <div className="mt-1 text-xs muted">
                   Driver approval is enabled once there are{" "}
-                  <span className="font-semibold text-[color:var(--foreground)]">no pending</span> driver + vehicle documents.
+                  <span className="font-semibold text-[color:var(--foreground)]">no pending</span> driver + vehicle
+                  documents. Linked vehicles with completed doc review are approved at the same time.
                 </div>
 
                 {(() => {
