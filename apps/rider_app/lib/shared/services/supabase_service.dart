@@ -248,6 +248,31 @@ class SupabaseService {
     }
   }
 
+  /// Own aggregate rating only (avg + count). Never comments or raters.
+  Future<({double? avgRating, int totalRatings})> fetchMyRatingSummary() async {
+    AppLog.d('profile.myRating', 'started');
+    try {
+      final raw = await client.rpc('rider_get_my_rating_summary');
+      final res = Map<String, dynamic>.from(raw as Map);
+      if (res['ok'] != true) {
+        throw StateError('${res['error'] ?? 'Could not load rating'}');
+      }
+      final avg = res['avg_rating'];
+      final total = res['total_ratings'];
+      AppLog.d('profile.myRating', 'ok', {
+        'avg': avg,
+        'total': total,
+      });
+      return (
+        avgRating: avg is num ? avg.toDouble() : null,
+        totalRatings: total is num ? total.toInt() : 0,
+      );
+    } catch (e, st) {
+      AppLog.e('profile.myRating', 'failed', error: e, stackTrace: st);
+      rethrow;
+    }
+  }
+
   Future<void> updateProfile(Map<String, dynamic> patch) async {
     final userId = auth.currentUser?.id;
     AppLog.i('profile.update', 'started', {

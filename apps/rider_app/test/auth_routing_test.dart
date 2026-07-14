@@ -48,18 +48,32 @@ void main() {
   });
 
   group('RiderProfile.canBook', () {
-    test('pending riders can book', () {
+    test('pending riders need photo and phone to book', () {
       const profile = RiderProfile(
         id: '1',
         status: RiderProfileStatus.pending,
       );
+      expect(profile.canBook, isFalse);
+      expect(profile.bookingBlockedReason, contains('profile photo'));
+    });
+
+    test('complete pending riders can book', () {
+      const profile = RiderProfile(
+        id: '1',
+        status: RiderProfileStatus.pending,
+        cellphone: '0821234567',
+        selfieUrl: 'uid/rider/photo.jpg',
+      );
       expect(profile.canBook, isTrue);
+      expect(profile.bookingBlockedReason, isNull);
     });
 
     test('suspended riders cannot book', () {
       const profile = RiderProfile(
         id: '1',
         status: RiderProfileStatus.suspended,
+        cellphone: '0821234567',
+        selfieUrl: 'uid/rider/photo.jpg',
       );
       expect(profile.canBook, isFalse);
     });
