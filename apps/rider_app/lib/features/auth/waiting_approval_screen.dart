@@ -5,6 +5,7 @@ import '../../core/constants/app_spacing.dart';
 import '../../shared/providers/app_providers.dart';
 import '../profile/document_upload_screen.dart';
 
+/// Optional status screen — no longer a hard gate after signup.
 class WaitingApprovalScreen extends ConsumerWidget {
   const WaitingApprovalScreen({super.key});
 
@@ -18,16 +19,16 @@ class WaitingApprovalScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(Icons.hourglass_top, size: 56),
+              const Icon(Icons.verified_user_outlined, size: 56),
               const SizedBox(height: 16),
               Text(
-                'We are reviewing your documents',
+                'Documents under review',
                 style: Theme.of(context).textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
-                'You will be able to book trips once your profile is approved.',
+                'You can keep using the app and booking trips while we review.',
                 style: Theme.of(context).textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
@@ -42,8 +43,13 @@ class WaitingApprovalScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               FilledButton(
-                onPressed: () => ref.invalidate(currentRiderProvider),
-                child: const Text('Refresh status'),
+                onPressed: () {
+                  ref.invalidate(currentRiderProvider);
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
+                },
+                child: const Text('Continue in app'),
               ),
             ],
           ),

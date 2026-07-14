@@ -37,6 +37,7 @@ class ProfileScreen extends ConsumerWidget {
             const Divider(),
             ListTile(
               title: const Text('Verification documents'),
+              subtitle: const Text('Optional — skip anytime'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(

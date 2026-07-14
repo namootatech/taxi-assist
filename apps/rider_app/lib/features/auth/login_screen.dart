@@ -4,11 +4,15 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../core/constants/app_spacing.dart';
 import '../../core/observability/app_sentry.dart';
+import '../../core/utils/app_log.dart';
 import '../../core/utils/safe_text.dart';
 import '../../core/utils/toast.dart';
 import '../../shared/providers/app_providers.dart';
+import '../../shared/widgets/trip_auth_header.dart';
+import 'forgot_password_screen.dart';
+import 'register_screen.dart';
 
-/// Stub sign-in (email/password). Registration and OTP deferred to Wave 2.
+/// Email/password sign-in for riders.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -30,18 +34,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      AppLog.d('ui.login', 'validation_failed');
+      return;
+    }
     setState(() => _loading = true);
+    final emailDomain = _email.text.contains('@')
+        ? _email.text.trim().toLowerCase().split('@').last
+        : 'invalid';
+    AppLog.i('ui.login', 'submit_started', {'emailDomain': emailDomain});
     try {
       AppSentry.action('rider.login.started');
       await ref.read(supabaseServiceProvider).signIn(
             email: _email.text,
             password: _password.text,
           );
+      AppLog.i('ui.login', 'auth_ok');
       AppSentry.action('rider.login.auth_ok');
       await ref.read(currentRiderProvider.notifier).refresh();
       if (mounted) Navigator.of(context).pop();
     } catch (e, st) {
+      AppLog.e('ui.login', 'failed', error: e, stackTrace: st, data: {
+        'emailDomain': emailDomain,
+      });
       AppSentry.action(
         'rider.login.failed',
         data: {'errorType': e.runtimeType.toString()},
@@ -67,11 +82,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const TripAuthHeader(
+                  title: 'Welcome back',
+                  subtitle: 'Sign in to book trips and manage your Taxi Assist wallet.',
+                ),
                 TextFormField(
                   controller: _email,
                   decoration: const InputDecoration(labelText: 'Email'),
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
+                  textInputAction: TextInputAction.next,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
                       return 'Enter your email';
@@ -85,12 +105,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   controller: _password,
                   decoration: const InputDecoration(labelText: 'Password'),
                   obscureText: true,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) {
+                    if (!_loading) _submit();
+                  },
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Enter your password';
                     return null;
                   },
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const ForgotPasswordScreen(),
+                      ),
+                    ),
+                    child: const Text('Forgot password?'),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 FilledButton(
                   onPressed: _loading ? null : _submit,
                   child: _loading
@@ -101,13 +137,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         )
                       : const Text('Sign in'),
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  'Create an account and phone OTP sign-in arrive in the next release.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                  textAlign: TextAlign.center,
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pushReplacement(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const RegisterScreen(),
+                    ),
+                  ),
+                  child: const Text('Create an account'),
                 ),
               ],
             ),

@@ -1,20 +1,23 @@
 import '../../shared/models/rider_profile.dart';
 
 /// Post-login UX branch for riders.
+///
+/// Verification / document upload is **optional**. Active riders (including
+/// PENDING) go straight to the main app. Only blocked accounts are gated.
 enum AuthDestination {
   /// Signed out — show landing / login.
   login,
 
-  /// No `profiles` row yet — finish sign-up (Wave 2).
+  /// No `profiles` row yet — still enter the app (profile may be provisioning).
   completeRegistration,
 
-  /// PENDING — profile or documents under review.
+  /// Kept for backwards-compatible routing tests; maps to [mainShell].
   pendingVerification,
 
-  /// Submitted registration; awaiting admin approval.
+  /// Kept for backwards-compatible routing tests; maps to [mainShell].
   waitingApproval,
 
-  /// Approved profile still needs ID uploads.
+  /// Optional documents flow (reachable from Profile, not a hard gate).
   documentUpload,
 
   /// Rejected / suspended / deactivated.
@@ -35,7 +38,9 @@ AuthDestination resolveRiderDestination({
   );
   if (mockApproved) return AuthDestination.mainShell;
   if (!hasSession) return AuthDestination.login;
-  if (status == null) return AuthDestination.completeRegistration;
+
+  // No profile row yet — still allow the main app (trigger may be catching up).
+  if (status == null) return AuthDestination.mainShell;
 
   switch (status) {
     case RiderProfileStatus.rejected:
@@ -43,16 +48,15 @@ AuthDestination resolveRiderDestination({
     case RiderProfileStatus.deactivated:
       return AuthDestination.accountBlocked;
     case RiderProfileStatus.approved:
-      return AuthDestination.mainShell;
     case RiderProfileStatus.pending:
-      if (registrationSubmitted) return AuthDestination.waitingApproval;
-      return AuthDestination.documentUpload;
+      // Verification is optional; pending/submitted docs must not block the app.
+      return AuthDestination.mainShell;
   }
 }
 
 AuthDestination resolveDestination(RiderProfile? profile) {
   if (profile == null) {
-    return AuthDestination.completeRegistration;
+    return AuthDestination.mainShell;
   }
   return resolveRiderDestination(
     hasSession: true,

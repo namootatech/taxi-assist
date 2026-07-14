@@ -5,6 +5,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
+import 'core/utils/app_log.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,9 +19,22 @@ Future<void> main() async {
       url.isEmpty ||
       anonKey.isEmpty ||
       url.contains('your-project')) {
-    debugPrint(
-      'Supabase env missing or placeholder. Update assets/default.env.',
+    AppLog.e(
+      'bootstrap',
+      'supabase_env_missing',
+      data: {
+        'hasUrl': url != null && url.isNotEmpty,
+        'hasAnonKey': anonKey != null && anonKey.isNotEmpty,
+      },
     );
+    debugPrint(
+      'Supabase env missing or placeholder. Update assets/default.env '
+      '(run: dart run tool/sync_env.dart from .env.local).',
+    );
+  } else {
+    AppLog.i('bootstrap', 'supabase_env_ok', {
+      'host': Uri.tryParse(url)?.host,
+    });
   }
 
   await Supabase.initialize(
@@ -30,10 +44,12 @@ Future<void> main() async {
       authFlowType: AuthFlowType.pkce,
     ),
   );
+  AppLog.i('bootstrap', 'supabase_initialized');
 
   final sentryDsn = dotenv.env['SENTRY_DSN'] ?? '';
 
   if (sentryDsn.isNotEmpty) {
+    AppLog.i('bootstrap', 'sentry_enabled');
     await SentryFlutter.init(
       (options) {
         options.dsn = sentryDsn;
@@ -45,6 +61,7 @@ Future<void> main() async {
       ),
     );
   } else {
+    AppLog.w('bootstrap', 'sentry_dsn_empty');
     runApp(const ProviderScope(child: TaxiAssistRiderApp()));
   }
 }

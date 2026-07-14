@@ -15,7 +15,8 @@ Shared Supabase project (same URL/anon key as driver/admin). All mobile calls us
 
 - Table: `public.profiles`
 - Rider fields: `full_name`, `cellphone`, `email`, `residential_address`, `address_type`, `unit_number`, `complex_name`, `referral_code`, `status` (`PENDING` \| `APPROVED`), `profile_type` = `RIDER`
-- Booking gate: `status = APPROVED`
+- Booking gate: active RIDER profiles may book (`PENDING` or `APPROVED`); blocked statuses denied
+- Fare estimate (client): **R25 base + R10/km**, min R35, display cap R500
 
 ## Trip RPCs
 
@@ -36,7 +37,17 @@ rider_request_trip(
 ```
 
 **Success:** `{ "ok": true, "trip": { ... } }`  
-**Errors:** `Not authenticated`, `Profile not approved for booking`, `Active trip already exists`
+**Errors:** `Not authenticated`, `Profile not found`, `Rider profile required`, `Account is not active`, `Active trip already exists`
+
+Wallet payment: after a successful request with `payment_method = WALLET`, the app calls `rider_debit_wallet_for_trip(trip_id, estimated_fare)`.
+
+### `rider_debit_wallet_for_trip`
+
+```sql
+rider_debit_wallet_for_trip(p_trip_id uuid, p_amount numeric) → jsonb
+```
+
+Debits RIDER wallet (`TRIP_FARE`) when balance allows.
 
 ### `rider_cancel_trip`
 
@@ -69,8 +80,11 @@ Inserts `driver_ratings`; optional wallet tip.
 | RPC / table | Purpose |
 |-------------|---------|
 | `wallets` (`wallet_type = RIDER`) | Balance read |
-| `wallet_transactions` | Ledger read |
-| `record_ad_view_event` | Ad lifecycle (see below) |
+| `wallet_transactions` | Ledger read (incl. `AD_REWARD`, `TRIP_FARE`, `TIP`) |
+| `get_next_ads_for_trip` | Next campaign creative for an active trip |
+| `record_ad_view_event` | Ad lifecycle |
+| `finalize_trip_ad_rewards` | Credit wallet for WATCHED/RATED views |
+| `rider_debit_wallet_for_trip` | Spend credits on trip fare |
 | `ad_views` | Rider SELECT own |
 
 ### `record_ad_view_event`

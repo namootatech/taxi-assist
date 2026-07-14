@@ -19,7 +19,16 @@ class RiderProfile {
   final bool registrationSubmitted;
 
   bool get isApproved => status == RiderProfileStatus.approved;
-  bool get canBook => isApproved && profileType == 'RIDER';
+
+  /// Verification is optional — any active (non-blocked) rider may book.
+  bool get canBook =>
+      profileType == 'RIDER' &&
+      status != RiderProfileStatus.rejected &&
+      status != RiderProfileStatus.suspended &&
+      status != RiderProfileStatus.deactivated;
+
+  bool get isVerificationPending =>
+      status == RiderProfileStatus.pending && !isApproved;
 
   factory RiderProfile.fromJson(Map<String, dynamic> json) {
     return RiderProfile(

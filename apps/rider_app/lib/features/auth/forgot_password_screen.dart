@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_spacing.dart';
+import '../../core/utils/app_log.dart';
 import '../../core/utils/safe_text.dart';
 import '../../core/utils/toast.dart';
 import '../../shared/providers/app_providers.dart';
@@ -10,7 +11,8 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
@@ -27,14 +29,20 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   Future<void> _submit() async {
     final email = _email.text.trim();
     if (!email.contains('@')) {
+      AppLog.d('ui.forgotPassword', 'invalid_email');
       showAppToast('Enter a valid email');
       return;
     }
     setState(() => _loading = true);
+    final emailDomain = email.split('@').last;
+    AppLog.i('ui.forgotPassword', 'submit_started', {'emailDomain': emailDomain});
     try {
       await ref.read(supabaseServiceProvider).resetPasswordForEmail(email);
+      AppLog.i('ui.forgotPassword', 'sent', {'emailDomain': emailDomain});
       setState(() => _sent = true);
-    } catch (e) {
+    } catch (e, st) {
+      AppLog.e('ui.forgotPassword', 'failed',
+          error: e, stackTrace: st, data: {'emailDomain': emailDomain});
       showAppToast(userFacingError(e), long: true);
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -73,6 +81,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                       controller: _email,
                       decoration: const InputDecoration(labelText: 'Email'),
                       keyboardType: TextInputType.emailAddress,
+                      autocorrect: false,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) {
+                        if (!_loading) _submit();
+                      },
                     ),
                     const SizedBox(height: 20),
                     FilledButton(
