@@ -15,22 +15,77 @@ import '../../shared/widgets/rider_map.dart';
 import '../profile/document_upload_screen.dart';
 import '../trip/booking_wizard_screen.dart';
 import '../trip/active_trip_screen.dart';
+import '../trip/models/trip.dart';
 import '../trip/models/trip_status.dart';
 import '../trip/post_trip_screen.dart';
 import '../trip/trip_service.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  String? _openedRatingForTripId;
+
+  void _maybeOpenRating(Trip trip) {
+    final dismissed = ref.read(dismissedRatingTripIdsProvider);
+    if (dismissed.contains(trip.tripId)) return;
+    if (_openedRatingForTripId == trip.tripId) return;
+    _openedRatingForTripId = trip.tripId;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      AppLog.i('ui.home', 'open_rating', {'tripId': trip.tripId});
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          fullscreenDialog: true,
+          builder: (_) => Scaffold(
+            appBar: AppBar(title: const Text('Rate your driver')),
+            body: PostTripScreen(trip: trip),
+          ),
+        ),
+      );
+      _openedRatingForTripId = null;
+      if (mounted) ref.invalidate(currentTripProvider);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final profile = ref.watch(currentRiderProvider).valueOrNull;
     final tripAsync = ref.watch(currentTripProvider);
+
+    ref.listen<AsyncValue<Trip?>>(currentTripProvider, (prev, next) {
+      final trip = next.valueOrNull;
+      if (trip != null && trip.status == TripStatus.completed) {
+        _maybeOpenRating(trip);
+      }
+    });
 
     return tripAsync.when(
       data: (trip) {
         if (trip != null && trip.status == TripStatus.completed) {
-          return PostTripScreen(trip: trip);
+          final dismissed = ref.watch(dismissedRatingTripIdsProvider);
+          if (dismissed.contains(trip.tripId)) {
+            return _BookingHome(profile: profile);
+          }
+          _maybeOpenRating(trip);
+          return const Center(
+            child: Padding(
+              padding: AppSpacing.screenPadding,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Trip complete — opening rating…'),
+                ],
+              ),
+            ),
+          );
         }
         if (trip != null && trip.isActive) {
           return ActiveTripScreen(trip: trip);
@@ -93,7 +148,8 @@ class _BookingHomeState extends ConsumerState<_BookingHome> {
       _position = pos;
       _loadingLocation = false;
     });
-    final label = await PlacesService().reverseGeocode(pos.latitude, pos.longitude);
+    final label =
+        await PlacesService().reverseGeocode(pos.latitude, pos.longitude);
     if (mounted && label != null) {
       setState(() => _addressLabel = label);
     }
@@ -101,13 +157,15 @@ class _BookingHomeState extends ConsumerState<_BookingHome> {
 
   void _openBooking({PlaceDetails? dropoff}) {
     final profile = widget.profile;
-    if (profile == null || !profile.canBook) {
-      showAppToast(
-        profile == null
-            ? 'Sign in to book'
-            : 'Your account cannot book trips right now. Contact support.',
-        long: true,
-      );
+    if (profile == null) {
+      showAppToast('Sign in to book', long: true);
+      return;
+    }
+    if (!profile.canBook) {
+      final reason = profile.bookingBlockedReason ??
+          'Complete your profile before booking.';
+      showAppToast(reason, long: true);
+      ref.read(mainShellTabIndexProvider.notifier).state = 3; // Profile tab
       return;
     }
     Navigator.of(context).push(

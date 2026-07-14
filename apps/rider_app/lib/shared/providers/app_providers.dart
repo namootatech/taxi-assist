@@ -12,6 +12,10 @@ final mainShellRouteProvider = StateProvider<String>((ref) => 'home');
 /// Bottom nav index for [MainShell].
 final mainShellTabIndexProvider = StateProvider<int>((ref) => 0);
 
+/// Completed trips the rider chose to rate later (session only).
+final dismissedRatingTripIdsProvider =
+    StateProvider<Set<String>>((ref) => <String>{});
+
 final supabaseServiceProvider = Provider<SupabaseService>((ref) {
   return SupabaseService();
 });
@@ -37,6 +41,18 @@ final riderWalletProvider =
   ref.watch(authProvider);
   AppLog.d('providers.wallet', 'load');
   return ref.watch(supabaseServiceProvider).fetchRiderWallet();
+});
+
+/// Aggregate only: avg stars + count for the signed-in rider.
+final riderMyRatingProvider =
+    FutureProvider.autoDispose<({double? avgRating, int totalRatings})>(
+        (ref) async {
+  ref.watch(authProvider);
+  final uid = ref.watch(supabaseClientProvider).auth.currentUser?.id;
+  if (uid == null) {
+    return (avgRating: null, totalRatings: 0);
+  }
+  return ref.watch(supabaseServiceProvider).fetchMyRatingSummary();
 });
 
 final currentRiderProvider =

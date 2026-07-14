@@ -7,6 +7,7 @@ import '../../core/utils/app_log.dart';
 import '../../shared/providers/app_providers.dart';
 import 'models/location_point.dart';
 import 'models/trip.dart';
+import 'models/trip_driver_details.dart';
 
 final tripServiceProvider = Provider<TripService>((ref) => TripService(ref));
 
@@ -37,6 +38,7 @@ class TripService {
 
   Stream<Trip?> watchActiveTrip(String riderId) {
     final controller = StreamController<Trip?>.broadcast();
+    Timer? poll;
 
     Future<void> pushLatest() async {
       try {
@@ -61,9 +63,15 @@ class TripService {
         )
         .subscribe();
 
+    // Realtime can miss events on emulators — poll as a safety net.
+    poll = Timer.periodic(const Duration(seconds: 4), (_) {
+      unawaited(pushLatest());
+    });
+
     unawaited(pushLatest());
 
     controller.onCancel = () {
+      poll?.cancel();
       unawaited(_client.removeChannel(channel));
     };
 
@@ -121,7 +129,7 @@ class TripService {
   Future<Trip?> fetchActiveTrip(String riderId) async {
     AppLog.d('trip.fetchActive', 'started', {'riderId': riderId});
     try {
-      final rows = await _client
+      final activeRows = await _client
           .from('trips')
           .select()
           .eq('rider_id', riderId)
@@ -129,16 +137,52 @@ class TripService {
           .order('updated_at', ascending: false)
           .limit(1);
 
-      final list = rows as List;
-      if (list.isEmpty) {
+      final activeList = activeRows as List;
+      if (activeList.isNotEmpty) {
+        final trip =
+            Trip.fromJson(Map<String, dynamic>.from(activeList.first as Map));
+        AppLog.d('trip.fetchActive', 'ok', {
+          'tripId': trip.tripId,
+          'status': trip.status.name,
+        });
+        return trip;
+      }
+
+      // Surface completed trips until the rider rates (or skips this session).
+      final completedRows = await _client
+          .from('trips')
+          .select()
+          .eq('rider_id', riderId)
+          .eq('status', 'COMPLETED')
+          .order('updated_at', ascending: false)
+          .limit(1);
+
+      final completedList = completedRows as List;
+      if (completedList.isEmpty) {
         AppLog.d('trip.fetchActive', 'none');
         return null;
       }
-      final trip =
-          Trip.fromJson(Map<String, dynamic>.from(list.first as Map));
-      AppLog.d('trip.fetchActive', 'ok', {
+
+      final trip = Trip.fromJson(
+        Map<String, dynamic>.from(completedList.first as Map),
+      );
+
+      final rating = await _client
+          .from('driver_ratings')
+          .select('rating_id')
+          .eq('trip_id', trip.tripId)
+          .eq('rider_id', riderId)
+          .maybeSingle();
+
+      if (rating != null) {
+        AppLog.d('trip.fetchActive', 'completed_already_rated', {
+          'tripId': trip.tripId,
+        });
+        return null;
+      }
+
+      AppLog.d('trip.fetchActive', 'completed_awaiting_rating', {
         'tripId': trip.tripId,
-        'status': trip.status.name,
       });
       return trip;
     } catch (e, st) {
@@ -258,21 +302,55 @@ class TripService {
     }
   }
 
-  Future<Map<String, dynamic>?> fetchDriverProfile(String? driverId) async {
-    AppLog.d('trip.driverProfile', 'started', {'driverId': driverId});
-    if (driverId == null) return null;
+  /// Assigned driver card for an owned trip (name, selfie, rating, vehicle).
+  Future<TripDriverDetails?> fetchTripDriver(String tripId) async {
+    AppLog.d('trip.driverCard', 'started', {'tripId': tripId});
     try {
-      final row = await _client
-          .from('profiles')
-          .select('id, full_name, cellphone, selfie_url')
-          .eq('id', driverId)
-          .maybeSingle();
-      AppLog.d('trip.driverProfile', 'ok', {'found': row != null});
-      if (row == null) return null;
-      return Map<String, dynamic>.from(row);
+      final raw = await _client.rpc(
+        'rider_get_trip_driver',
+        params: {'p_trip_id': tripId},
+      );
+      final res = Map<String, dynamic>.from(raw as Map);
+      if (res['ok'] != true) {
+        AppLog.w('trip.driverCard', 'rpc_rejected', {'error': '${res['error']}'});
+        throw TripStateException('${res['error'] ?? res}');
+      }
+      if (res['assigned'] != true || res['driver'] is! Map) {
+        AppLog.d('trip.driverCard', 'unassigned');
+        return null;
+      }
+      final details = TripDriverDetails.fromJson(
+        Map<String, dynamic>.from(res['driver'] as Map),
+      );
+      final resolved = details.copyWithSelfie(
+        _resolveSelfieUrl(details.selfieUrl),
+      );
+      AppLog.d('trip.driverCard', 'ok', {
+        'driverId': resolved.id,
+        'hasVehicle': resolved.vehicle != null,
+        'hasRating': resolved.avgRating != null,
+      });
+      return resolved;
     } catch (e, st) {
-      AppLog.e('trip.driverProfile', 'failed', error: e, stackTrace: st);
+      AppLog.e('trip.driverCard', 'failed', error: e, stackTrace: st);
       rethrow;
+    }
+  }
+
+  @Deprecated('Use fetchTripDriver(tripId) — profile RLS blocks direct reads')
+  Future<Map<String, dynamic>?> fetchDriverProfile(String? driverId) async {
+    AppLog.d('trip.driverProfile', 'legacy_skipped', {'driverId': driverId});
+    return null;
+  }
+
+  String? _resolveSelfieUrl(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    final path = raw.trim();
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    try {
+      return _client.storage.from('driver-documents').getPublicUrl(path);
+    } catch (_) {
+      return path;
     }
   }
 }
