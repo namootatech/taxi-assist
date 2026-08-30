@@ -18,7 +18,7 @@ class MediaSummaryScreen extends ConsumerWidget {
     final walletAsync = ref.watch(riderWalletProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Taxi Assist Media')),
+      appBar: AppBar(title: const Text('Trip Media')),
       body: ListView(
         padding: AppSpacing.screenPadding,
         children: [

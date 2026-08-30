@@ -21,7 +21,7 @@ class TaxiAssistRiderApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
     return MaterialApp(
-      title: 'Taxi Assist Rider',
+      title: 'Trip Rider',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,

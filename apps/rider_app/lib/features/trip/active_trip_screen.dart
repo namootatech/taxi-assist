@@ -214,7 +214,7 @@ class _ActiveTripScreenState extends ConsumerState<ActiveTripScreen> {
                               _adShown = false;
                               _maybeShowAd();
                             },
-                            child: const Text('Watch Taxi Assist Media'),
+                            child: const Text('Watch Trip Media'),
                           ),
                         if (trip.status == TripStatus.requested ||
                             trip.status == TripStatus.enRoutePickup ||

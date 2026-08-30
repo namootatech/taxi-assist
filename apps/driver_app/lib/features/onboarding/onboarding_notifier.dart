@@ -10,6 +10,7 @@ import '../../shared/models/driver_profile.dart';
 import '../../shared/models/vehicle_draft.dart';
 import '../../shared/providers/app_providers.dart';
 import '../../shared/services/document_upload_service.dart';
+import '../../shared/services/onboarding_payment_service.dart';
 import '../../shared/services/supabase_service.dart';
 import 'onboarding_state.dart';
 
@@ -434,6 +435,18 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   Future<void> submitRegistration() async {
     state = state.copyWith(isBusy: true, clearError: true);
     try {
+      final canSubmit = await _ref
+          .read(onboardingPaymentServiceProvider)
+          .canSubmitRegistration(_profileId);
+      if (!canSubmit) {
+        state = state.copyWith(isBusy: false);
+        showAppToast(
+          'Pay the annual onboarding fee before submitting for review.',
+          long: true,
+        );
+        return;
+      }
+
       await _svc.updateProfile({
         'registration_submitted': true,
         'status': 'PENDING',

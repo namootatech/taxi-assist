@@ -17,30 +17,30 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://trip.example"),
-  applicationName: "Trip / Taxi Assist",
+  applicationName: "Trip",
   title: {
-    default: "Trip / Taxi Assist | Safe rides, clear earning paths, in-trip media",
-    template: "%s | Trip / Taxi Assist",
+    default: "Trip | Safe rides, clear earning paths, in-trip media",
+    template: "%s | Trip",
   },
   description:
-    "Trip / Taxi Assist helps South Africans move and earn with verified drivers, flexible payments, and partner advertising built for real trips.",
+    "Trip helps South Africans move and earn with verified drivers, flexible payments, and partner advertising built for real trips.",
   keywords: [
     "Trip",
-    "Taxi Assist",
+    "Trip",
     "South Africa ride hailing",
     "verified drivers",
     "driver earnings",
-    "Taxi Assist Media",
+    "Trip Media",
     "in-trip advertising",
   ],
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "Trip / Taxi Assist",
+    title: "Trip",
     description: "Move and earn with verification and payments that fit South Africa.",
     url: "/",
-    siteName: "Trip / Taxi Assist",
+    siteName: "Trip",
     type: "website",
     locale: "en_ZA",
     images: [
@@ -48,13 +48,13 @@ export const metadata: Metadata = {
         url: "/android-chrome-512x512.png",
         width: 512,
         height: 512,
-        alt: "Trip / Taxi Assist",
+        alt: "Trip",
       },
     ],
   },
   twitter: {
     card: "summary",
-    title: "Trip / Taxi Assist",
+    title: "Trip",
     description: "Move and earn with verification and payments that fit South Africa.",
     images: ["/android-chrome-512x512.png"],
   },

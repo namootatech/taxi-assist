@@ -17,7 +17,7 @@ class InviteFriendsScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Share Taxi Assist with friends',
+              'Share Trip with friends',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 16),

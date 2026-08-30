@@ -25,17 +25,36 @@ export function PackagesConsole({
   packages: Array<CampaignPackageRow>;
   promotions: Array<PlatformPromotionRow>;
 }) {
+  const campaignPackages = packages.filter((pkg) => pkg.packageKind === 'campaign');
+  const subscriptionPackages = packages.filter((pkg) => pkg.packageKind === 'subscription');
+
   return (
     <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Standard packages</h2>
-        <p className="text-sm muted">
-          Partners buy a package plus extra impressions. Price scales as (base price ÷ 1,000) × impressions purchased.
-        </p>
-        <div className="grid gap-4">
-          {packages.map((pkg) => (
-            <PackageCard key={pkg.id} pkg={pkg} />
-          ))}
+      <section className="space-y-6">
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Campaign packages</h2>
+          <p className="text-sm muted">
+            Partners buy a package plus extra impressions. Price scales as (base price ÷ 1,000) × impressions purchased.
+          </p>
+          <div className="grid gap-4">
+            {campaignPackages.map((pkg) => (
+              <PackageCard key={pkg.id} pkg={pkg} />
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Subscription packages</h2>
+          <p className="text-sm muted">
+            Recurring billing every 30 days with daily impression caps. Starter renews automatically via Payfast.
+          </p>
+          <div className="grid gap-4">
+            {subscriptionPackages.length ? (
+              subscriptionPackages.map((pkg) => <SubscriptionPackageCard key={pkg.id} pkg={pkg} />)
+            ) : (
+              <p className="text-sm muted">No subscription packages configured.</p>
+            )}
+          </div>
         </div>
       </section>
 
@@ -51,6 +70,39 @@ export function PackagesConsole({
           <p className="text-sm muted">No promotions configured.</p>
         ) : null}
       </section>
+    </div>
+  );
+}
+
+function SubscriptionPackageCard({ pkg }: { pkg: CampaignPackageRow }) {
+  const monthly = pkg.monthlyPriceCents ?? pkg.basePriceCents;
+  return (
+    <div className="rounded-2xl border border-token surface-1 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-base font-semibold">{pkg.name}</div>
+          <div className="text-xs muted">{pkg.slug} · subscription</div>
+        </div>
+        <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800">
+          {pkg.isActive ? 'Active' : 'Inactive'}
+        </span>
+      </div>
+      <p className="mt-3 text-sm">{pkg.description}</p>
+      <div className="mt-3 grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+        <Stat label="Price" value={formatZar(monthly)} />
+        <Stat label="Billing" value={`Every ${pkg.billingIntervalDays ?? 30} days`} />
+        <Stat label="Daily cap" value={`${pkg.dailyImpressionCap ?? 30} views/day`} />
+        <Stat label="Duration / skip" value={`${pkg.maxDurationSeconds ?? 30}s · skip ${pkg.skipAfterSeconds ?? 0}s`} />
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-token bg-[color:var(--surface-2)] px-3 py-2">
+      <div className="text-[11px] font-semibold uppercase tracking-wide muted">{label}</div>
+      <div className="mt-1 font-semibold">{value}</div>
     </div>
   );
 }

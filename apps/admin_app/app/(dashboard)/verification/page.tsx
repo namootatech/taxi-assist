@@ -5,6 +5,8 @@ import {
   logActionWarn,
 } from '@/lib/server-action-logger';
 import { userFacingError } from '@/lib/user-facing-error';
+import { decideVehicle } from '@/lib/vehicles/actions';
+import { storageBucketForPath } from '@/lib/vehicles/storage';
 import { RealtimeRefresh } from '@/components/realtime/RealtimeRefresh';
 import { VerificationQueueClient } from './VerificationQueueClient';
 
@@ -57,6 +59,9 @@ type VehicleRow = {
   owner_details: unknown | null;
   company_details: unknown | null;
   status: string | null;
+  onboarding_fee_status: string | null;
+  onboarding_fee_waived_until: string | null;
+  onboarding_fee_paid_until: string | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -101,23 +106,6 @@ export default async function VerificationPage({
     .eq('status', effectiveStatus)
     .order('created_at', { ascending: true })
     .limit(400);
-
-  function storageBucketForPath(filePath: string) {
-    const parts = filePath.split('/');
-    if (parts.length >= 4 && parts[1] === 'vehicle') {
-      const file = parts[3] ?? '';
-      if (
-        file.startsWith('front_') ||
-        file.startsWith('left_') ||
-        file.startsWith('right_') ||
-        file.startsWith('rear_') ||
-        file.startsWith('speedo_')
-      ) {
-        return 'vehicle-photos';
-      }
-    }
-    return 'driver-documents';
-  }
 
   async function signedUrlFor(doc: DocRow) {
     const filePath = doc.file_path;
@@ -390,93 +378,6 @@ export default async function VerificationPage({
     return { ok: true as const };
   }
 
-  async function decideVehicle(formData: FormData) {
-    'use server';
-    const vehicleId = String(formData.get('vehicle_id') ?? '');
-    const decision = String(formData.get('decision') ?? '').toUpperCase();
-    const reason = String(formData.get('reason') ?? '').trim();
-
-    if (!vehicleId || (decision !== 'APPROVED' && decision !== 'REJECTED')) {
-      return { ok: false as const, error: 'Invalid request' };
-    }
-    if (!reason) {
-      return { ok: false as const, error: 'Reason is required' };
-    }
-
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: userErr,
-    } = await supabase.auth.getUser();
-    if (userErr || !user) {
-      return { ok: false as const, error: 'Not authenticated' };
-    }
-
-    if (decision === 'APPROVED') {
-      const { data: vehicleDocs, error: docsErr } = await supabase
-        .from('documents')
-        .select('document_id, status')
-        .eq('entity_type', 'VEHICLE')
-        .eq('entity_id', vehicleId);
-
-      if (docsErr) {
-        return { ok: false as const, error: userFacingError(docsErr) };
-      }
-
-      const docs = vehicleDocs ?? [];
-      if (!docs.length) {
-        return {
-          ok: false as const,
-          error: 'Vehicle has no documents to review',
-        };
-      }
-
-      const pendingCount = docs.filter(
-        (d) => String(d.status ?? '').toUpperCase() === 'PENDING',
-      ).length;
-      if (pendingCount > 0) {
-        return {
-          ok: false as const,
-          error: `You still have ${pendingCount} pending vehicle document(s). Review them first.`,
-        };
-      }
-    }
-
-    const nowIso = new Date().toISOString();
-    const { error: updateErr } = await supabase
-      .from('vehicles')
-      .update(
-        decision === 'APPROVED'
-          ? {
-              status: 'APPROVED',
-              rejection_reason: null,
-              rejected_at: null,
-              updated_at: nowIso,
-            }
-          : {
-              status: 'REJECTED',
-              rejection_reason: reason,
-              rejected_at: nowIso,
-              updated_at: nowIso,
-            },
-      )
-      .eq('vehicle_id', vehicleId);
-
-    if (updateErr) {
-      return { ok: false as const, error: userFacingError(updateErr) };
-    }
-
-    await supabase.rpc('admin_audit_log', {
-      p_action: decision === 'APPROVED' ? 'vehicle.approve' : 'vehicle.reject',
-      p_entity_type: 'vehicles',
-      p_entity_id: vehicleId,
-      p_reason: reason,
-      p_metadata: {},
-    });
-
-    return { ok: true as const };
-  }
-
   if (error) {
     return (
       <div className='p-6'>
@@ -571,7 +472,7 @@ export default async function VerificationPage({
       ? supabase
           .from('vehicles')
           .select(
-            'vehicle_id, linked_driver_id, registration_number, make, model, colour, category, vin, speedometer_reading, owner_type, owner_details, company_details, status, created_at, updated_at',
+            'vehicle_id, linked_driver_id, registration_number, make, model, colour, category, vin, speedometer_reading, owner_type, owner_details, company_details, status, onboarding_fee_status, onboarding_fee_waived_until, onboarding_fee_paid_until, created_at, updated_at',
           )
           .in('vehicle_id', vehicleIds)
       : Promise.resolve({ data: [] as unknown[] }),

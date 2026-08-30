@@ -37,7 +37,7 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Taxi Assist Driver'),
+        title: const Text('Trip Driver'),
         actions: [
           IconButton(
             tooltip: 'Switch theme',

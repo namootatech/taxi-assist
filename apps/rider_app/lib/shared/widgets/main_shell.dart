@@ -43,7 +43,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: const Text('Taxi Assist'),
+        title: const Text('Trip'),
         leading: IconButton(
           icon: const Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
@@ -64,7 +64,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Taxi Assist',
+                      'Trip',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 4),

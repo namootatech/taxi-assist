@@ -1,6 +1,6 @@
-# Taxi Assist — Driver App (Flutter)
+# Trip — Driver App (Flutter)
 
-This is the Driver app for the Taxi Assist platform.
+This is the Driver app for the Trip platform.
 
 ## Prerequisites
 

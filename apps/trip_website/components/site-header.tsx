@@ -22,7 +22,7 @@ export function SiteHeader() {
           </span>
           <span>
             <span className="block text-sm font-black uppercase tracking-[0.22em]">Trip</span>
-            <span className="block text-xs muted">Taxi Assist</span>
+            <span className="block text-xs muted">Trip</span>
           </span>
         </Link>
 

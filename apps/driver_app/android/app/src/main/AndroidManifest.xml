@@ -6,7 +6,7 @@
         </intent>
     </queries>
     <application
-        android:label="Taxi Assist Driver"
+        android:label="Trip Driver"
         android:name="${applicationName}"
         android:icon="@drawable/ic_launcher">
         <meta-data

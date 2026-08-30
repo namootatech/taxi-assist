@@ -3,10 +3,14 @@ export interface PartnerPackage {
   slug: string
   name: string
   description: string
+  package_kind: "campaign" | "subscription"
   base_price_cents: number
+  monthly_price_cents: number | null
   min_impressions: number
   max_duration_seconds: number
   skip_after_seconds: number
+  daily_impression_cap: number | null
+  billing_interval_days: number | null
   allows_website: boolean
   allows_whatsapp: boolean
 }

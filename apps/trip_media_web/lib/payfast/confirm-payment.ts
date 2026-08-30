@@ -30,6 +30,16 @@ export async function confirmPayfastPayment(
     });
   }
 
+  if (parsed.kind === 'subscription') {
+    return admin.rpc('partner_confirm_starter_subscription_payment', {
+      p_campaign_id: parsed.campaignId,
+      p_payment_id: parsed.paymentId,
+      p_provider_payment_id: eventId,
+      p_amount_cents: amountCents,
+      p_status: paymentStatus,
+    });
+  }
+
   return admin.rpc('partner_confirm_impression_topup', {
     p_campaign_id: parsed.campaignId,
     p_payment_id: parsed.paymentId,

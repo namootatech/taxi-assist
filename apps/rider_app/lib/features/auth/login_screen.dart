@@ -84,7 +84,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               children: [
                 const TripAuthHeader(
                   title: 'Welcome back',
-                  subtitle: 'Sign in to book trips and manage your Taxi Assist wallet.',
+                  subtitle: 'Sign in to book trips and manage your Trip wallet.',
                 ),
                 TextFormField(
                   controller: _email,

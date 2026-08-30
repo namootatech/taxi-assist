@@ -1,4 +1,4 @@
-export type PayfastPaymentKind = 'campaign' | 'topup';
+export type PayfastPaymentKind = 'campaign' | 'topup' | 'subscription' | 'onboarding';
 
 export interface ParsedPayfastPaymentRef {
   kind: PayfastPaymentKind;
@@ -14,6 +14,9 @@ export function parsePayfastPaymentRef(mPaymentId: string): ParsedPayfastPayment
   if (parts[0] === 'topup' && parts.length >= 3) {
     return { kind: 'topup', campaignId: parts[1], paymentId: parts[2] };
   }
+  if (parts[0] === 'subscription' && parts.length >= 3) {
+    return { kind: 'subscription', campaignId: parts[1], paymentId: parts[2] };
+  }
   return null;
 }
 
@@ -22,7 +25,9 @@ export function buildPayfastPaymentRef(
   campaignId: string,
   paymentId: string,
 ): string {
-  return `${kind === 'campaign' ? 'campaign' : 'topup'}:${campaignId}:${paymentId}`;
+  if (kind === 'campaign') return `campaign:${campaignId}:${paymentId}`;
+  if (kind === 'topup') return `topup:${campaignId}:${paymentId}`;
+  return `subscription:${campaignId}:${paymentId}`;
 }
 
 export function buildBillingReturnUrl(

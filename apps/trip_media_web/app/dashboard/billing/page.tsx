@@ -107,7 +107,7 @@ export default async function BillingPage({
             <h2 className='text-lg font-black'>Pay for campaigns</h2>
           </div>
           <p className='mt-3 text-sm text-slate-300'>
-            Choose Basic, Essential, or Premium when creating a campaign. Payment happens before admin review.
+            Choose a package and pay with Payfast on the same step when creating a campaign. Checkout happens inline — no separate billing step required.
           </p>
           <Link
             href='/dashboard/campaigns/new'

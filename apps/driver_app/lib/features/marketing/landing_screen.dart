@@ -59,7 +59,7 @@ class LandingScreen extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Taxi Assist Driver',
+                          Text('Trip Driver',
                               style: textTheme.titleSmall),
                           const SizedBox(height: 2),
                           Text(

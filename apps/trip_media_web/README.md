@@ -1,6 +1,6 @@
 # Trip Media Web
 
-Self-serve advertiser portal for Taxi Assist Media partners.
+Self-serve advertiser portal for Trip Media partners.
 
 ## Planning
 

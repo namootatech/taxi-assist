@@ -7,7 +7,7 @@ import '../../core/utils/app_log.dart';
 import '../../core/utils/toast.dart';
 import '../../shared/providers/app_providers.dart';
 
-/// Taxi Assist Media — full-screen ad surface with abandon warning.
+/// Trip Media — full-screen ad surface with abandon warning.
 class AdPlaybackScreen extends ConsumerStatefulWidget {
   const AdPlaybackScreen({
     super.key,
@@ -191,7 +191,7 @@ class _Intro extends StatelessWidget {
         const Icon(Icons.play_circle_outline, size: 72, color: Colors.white),
         const SizedBox(height: 16),
         Text(
-          advertiser ?? 'Taxi Assist Media',
+          advertiser ?? 'Trip Media',
           style: Theme.of(context)
               .textTheme
               .headlineSmall

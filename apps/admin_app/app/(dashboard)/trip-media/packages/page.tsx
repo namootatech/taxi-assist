@@ -15,7 +15,7 @@ export default async function TripMediaPackagesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Campaign packages & pricing"
-        description="Fixed Basic, Essential, and Premium packages. Rider payout per impression is hidden from partners. Prelaunch discount applies automatically when active."
+        description="Campaign packages (Basic, Essential, Premium) plus the Starter subscription. Rider payout per impression is hidden from partners."
       />
       <PackagesConsole packages={packages} promotions={promotions} />
     </div>

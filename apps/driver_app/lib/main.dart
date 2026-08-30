@@ -5,8 +5,9 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
+import 'core/utils/supabase_session_recovery.dart';
 
-/// Taxi Assist Driver — bootstrap.
+/// Trip Driver — bootstrap.
 ///
 /// 1. Loads [assets/default.env] (copy from [.env.example] for local naming).
 /// 2. Initializes Supabase (RLS assumed on backend).
@@ -39,6 +40,10 @@ Future<void> main() async {
       authFlowType: AuthFlowType.pkce,
     ),
   );
+
+  // Stale SharedPreferences sessions from other installs crash the home
+  // stream with AuthApiException(refresh_token_not_found). Clear them.
+  await recoverSupabaseSessionOnLaunch();
 
   final sentryDsn = dotenv.env['SENTRY_DSN'] ?? '';
 

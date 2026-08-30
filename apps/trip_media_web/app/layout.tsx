@@ -23,10 +23,9 @@ export const metadata: Metadata = {
     template: '%s | Trip Media',
   },
   description:
-    'Plan, launch, and monitor in-trip media campaigns with Trip / Taxi Assist.',
+    'Plan, launch, and monitor in-trip media campaigns with Trip Media.',
   keywords: [
     'Trip Media',
-    'Taxi Assist Media',
     'in-trip advertising',
     'South Africa advertising',
     'ride hailing media',
@@ -38,7 +37,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Trip Media | Partner Portal',
     description:
-      'Plan, launch, and monitor in-trip media campaigns with Trip / Taxi Assist.',
+      'Plan, launch, and monitor in-trip media campaigns with Trip Media.',
     url: '/',
     siteName: 'Trip Media',
     type: 'website',
@@ -56,7 +55,7 @@ export const metadata: Metadata = {
     card: 'summary',
     title: 'Trip Media | Partner Portal',
     description:
-      'Plan, launch, and monitor in-trip media campaigns with Trip / Taxi Assist.',
+      'Plan, launch, and monitor in-trip media campaigns with Trip Media.',
     images: ['/android-chrome-512x512.png'],
   },
   icons: {

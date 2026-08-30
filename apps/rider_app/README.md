@@ -1,6 +1,6 @@
-# Taxi Assist Rider
+# Trip Rider
 
-Flutter + Supabase + Riverpod passenger app for the Taxi Assist platform.
+Flutter + Supabase + Riverpod passenger app for the Trip platform.
 
 ## Planning docs
 

@@ -198,7 +198,7 @@ class _PostTripScreenState extends ConsumerState<PostTripScreen> {
             color: scheme.secondaryContainer,
             child: ListTile(
               leading: const Icon(Icons.savings_outlined),
-              title: const Text('Taxi Assist Media'),
+              title: const Text('Trip Media'),
               subtitle: const Text('Credited to your wallet'),
               trailing: Text(
                 '+R${_adEarnings.toStringAsFixed(2)}',

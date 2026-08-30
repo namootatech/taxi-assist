@@ -35,7 +35,7 @@ class MediaPlaceholderScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const _FeaturePlaceholder(
       icon: Icons.play_circle_outline,
-      title: 'Taxi Assist Media',
+      title: 'Trip Media',
       subtitle: 'Ad credits and media summary — Wave 3.',
     );
   }

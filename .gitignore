@@ -32,3 +32,4 @@
 # Supabase CLI local link/cache (do not commit)
 **/.temp/
 supabase/.branches/
+.vercel

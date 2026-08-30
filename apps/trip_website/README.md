@@ -1,6 +1,6 @@
 # Trip Website
 
-Public marketing site for Trip / Taxi Assist.
+Public marketing site for Trip.
 
 ## Planning
 

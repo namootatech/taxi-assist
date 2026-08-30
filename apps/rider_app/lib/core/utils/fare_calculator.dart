@@ -1,4 +1,4 @@
-/// Taxi Assist Rider fare engine.
+/// Trip Rider fare engine.
 ///
 /// Product rule (2026-07-14): **R25 base + R10 per km**, minimum R35.
 /// Soft display cap R500 for pre-trip estimates.

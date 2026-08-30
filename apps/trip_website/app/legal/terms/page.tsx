@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Terms | Trip / Taxi Assist",
-  description: "Trip / Taxi Assist public terms placeholder for riders, drivers, and advertising partners.",
+  title: "Terms | Trip",
+  description: "Trip public terms placeholder for riders, drivers, and advertising partners.",
 }
 
 export default function LegalTermsPage() {

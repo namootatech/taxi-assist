@@ -27,7 +27,7 @@ const audienceCards = [
     icon: Megaphone,
     eyebrow: "For partners",
     title: "Put your brand inside real trips.",
-    body: "Reach riders through Taxi Assist Media with campaigns built around attention, timing, and trust.",
+    body: "Reach riders through Trip Media with campaigns built around attention, timing, and trust.",
     cta: "Advertise with us",
     href: externalLinks.tripMediaWeb,
   },
@@ -46,7 +46,7 @@ export default function Home() {
         <div className="mx-auto grid min-h-[calc(100svh-74px)] max-w-7xl items-center gap-10 px-5 py-16 md:grid-cols-[0.95fr_1.05fr] md:px-8 md:py-20">
           <div className="relative z-10">
             <p className="text-sm font-black uppercase tracking-[0.28em] text-[var(--brand-red)]">
-              Trip / Taxi Assist
+              Trip
             </p>
             <h1 className="mt-5 max-w-3xl text-5xl font-black leading-[0.96] tracking-[-0.06em] md:text-7xl">
               Move safely. Earn clearly. Reach people in motion.

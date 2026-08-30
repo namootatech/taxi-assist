@@ -52,19 +52,30 @@ String onlineStatusToApi(DriverOnlineStatus s) =>
     s == DriverOnlineStatus.online ? 'ONLINE' : 'OFFLINE';
 
 /// Vehicle category (PRD / business-logic §2.2).
-enum VehicleCategory { tuktuk, sedan, luxury, van }
+enum VehicleCategory { hatchback, tuktuk, sedan, luxury, van }
 
 String vehicleCategoryToApi(VehicleCategory c) => switch (c) {
+      VehicleCategory.hatchback => 'HATCHBACK',
       VehicleCategory.tuktuk => 'TUKTUK',
       VehicleCategory.sedan => 'SEDAN',
       VehicleCategory.luxury => 'LUXURY',
       VehicleCategory.van => 'VAN',
     };
 
+String vehicleCategoryLabel(VehicleCategory c) => switch (c) {
+      VehicleCategory.hatchback => 'Hatchback',
+      VehicleCategory.tuktuk => 'Tuk-tuk',
+      VehicleCategory.sedan => 'Sedan',
+      VehicleCategory.luxury => 'Premium',
+      VehicleCategory.van => 'Van',
+    };
+
 VehicleCategory parseVehicleCategory(String? raw,
     {VehicleCategory fallback = VehicleCategory.sedan}) {
   if (raw == null || raw.isEmpty) return fallback;
   switch (raw.toUpperCase()) {
+    case 'HATCHBACK':
+      return VehicleCategory.hatchback;
     case 'TUKTUK':
       return VehicleCategory.tuktuk;
     case 'SEDAN':

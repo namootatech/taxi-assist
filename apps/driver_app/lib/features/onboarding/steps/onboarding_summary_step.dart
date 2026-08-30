@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../shared/models/driver_enums.dart';
 import '../../../shared/models/vehicle_draft.dart';
+import '../../../shared/services/onboarding_payment_service.dart';
 import '../onboarding_notifier.dart';
 
 class OnboardingSummaryStep extends ConsumerWidget {
@@ -19,6 +20,10 @@ class OnboardingSummaryStep extends ConsumerWidget {
     final n = ref.read(onboardingNotifierProvider(profileId).notifier);
     final v = st.vehicleDraft;
     final scheme = Theme.of(context).colorScheme;
+
+    final feeAsync = st.vehicleId != null
+        ? ref.watch(vehicleOnboardingFeeProvider(st.vehicleId!))
+        : const AsyncValue<VehicleOnboardingFeeInfo?>.data(null);
 
     Widget section(String title, List<Widget> lines) {
       return Padding(
@@ -100,9 +105,24 @@ class OnboardingSummaryStep extends ConsumerWidget {
             line('Owner', v.ownerKind == VehicleOwnerKind.privateVehicle ? 'Private' : 'Company'),
             line('Registration', v.registrationNumber.trim()),
             line('Vehicle', '${v.make.trim()} ${v.model.trim()}'),
-            line('Category', vehicleCategoryToApi(v.category)),
+            line('Category', vehicleCategoryLabel(v.category)),
             if (st.vehicleId != null) line('Vehicle ID', st.vehicleId!),
           ]),
+          feeAsync.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (fee) {
+              if (fee == null) return const SizedBox.shrink();
+              return section('Onboarding fee', [
+                line('Annual fee', fee.formatZar(fee.annualFeeCents)),
+                line('Status', fee.statusLabel),
+                if (fee.waivedUntil != null)
+                  line('Waived until', _df.format(fee.waivedUntil!)),
+                if (fee.paidUntil != null)
+                  line('Paid until', _df.format(fee.paidUntil!)),
+              ]);
+            },
+          ),
           section('Uploads', [
             ...docSlots.entries.map(
               (e) => Padding(

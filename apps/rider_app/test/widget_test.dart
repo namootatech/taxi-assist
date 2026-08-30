@@ -23,7 +23,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Sign in'), findsOneWidget);
-    expect(find.text('Taxi Assist Rider'), findsOneWidget);
+    expect(find.text('Trip Rider'), findsOneWidget);
     expect(find.text('Create account'), findsOneWidget);
   });
 }

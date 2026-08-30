@@ -70,7 +70,7 @@ export function LeadForm() {
 
       <label className="flex gap-3 text-sm leading-6 muted">
         <input className="mt-1 size-4 accent-[var(--brand-red)]" name="consent" type="checkbox" required />
-        <span>Trip / Taxi Assist may contact me about this request. We won’t use this form to collect rider trip details.</span>
+        <span>Trip may contact me about this request. We won’t use this form to collect rider trip details.</span>
       </label>
 
       <button

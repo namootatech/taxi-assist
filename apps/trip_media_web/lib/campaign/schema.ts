@@ -6,7 +6,7 @@ export const campaignDraftSchema = z
     advertiser: z.string().trim().min(2, "Add a campaign name."),
     company_name: z.string().trim().min(2, "Add your company name."),
     package_id: z.string().uuid("Select a package."),
-    impressions: z.coerce.number().int().min(1000, "Minimum 1,000 impressions."),
+    impressions: z.coerce.number().int().min(1000, "Minimum 1,000 impressions.").optional(),
     creative_id: z.string().uuid().optional(),
     start_date: z.string().min(1, "Start date is required."),
     end_date: z.string().optional(),

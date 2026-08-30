@@ -57,7 +57,7 @@ Deno.serve(async (request) => {
   })
 
   const html = renderBrandedWrapper({
-    brandName: Deno.env.get("EMAIL_BRAND_NAME")?.trim() || "Taxi Assist Media",
+    brandName: Deno.env.get("EMAIL_BRAND_NAME")?.trim() || "Trip",
     contentHtml: templateContent.bodyHtml,
     previewText: templateContent.previewText,
     subject: parsedPayload.value.subject,

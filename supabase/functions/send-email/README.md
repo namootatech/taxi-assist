@@ -33,7 +33,7 @@ Set these with `supabase secrets set` (or in the Supabase dashboard):
 | `EMAIL_FROM` | Yes | Sender identity, for example `Trip Media <no-reply@your-domain.com>` |
 | `EMAIL_INTERNAL_SECRET` | Yes | Shared secret required in `x-internal-email-secret` request header |
 | `EMAIL_PROVIDER_ORDER` | Optional | Comma-separated provider order (defaults to `resend`) |
-| `EMAIL_BRAND_NAME` | Optional | Brand text in email header (defaults to `Taxi Assist Media`) |
+| `EMAIL_BRAND_NAME` | Optional | Brand text in email header (defaults to `Trip`) |
 | `EMAIL_SUPPORT_EMAIL` | Optional | Footer support contact (defaults to `support@taxiassist.co.za`) |
 
 ## Security model

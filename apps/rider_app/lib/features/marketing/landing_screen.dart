@@ -113,7 +113,7 @@ class _LandingScreenState extends State<LandingScreen>
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Taxi Assist Rider',
+                                        'Trip Rider',
                                         style: textTheme.titleSmall,
                                       ),
                                       const SizedBox(height: 2),
@@ -168,7 +168,7 @@ class _LandingScreenState extends State<LandingScreen>
                                     ),
                                     const SizedBox(height: 12),
                                     Text(
-                                      'Request a ride in seconds, track your driver live, and pay with cash, card, or Taxi Assist Media credits.',
+                                      'Request a ride in seconds, track your driver live, and pay with cash, card, or Trip Media credits.',
                                       style: textTheme.headlineSmall?.copyWith(
                                         color: scheme.onSurface.withOpacity(
                                           isDark ? 0.78 : 0.72,

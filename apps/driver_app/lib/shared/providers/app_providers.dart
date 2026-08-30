@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/supabase_client.dart';
+import '../../core/utils/supabase_session_recovery.dart';
 import '../models/driver_profile.dart';
 import '../services/document_upload_service.dart';
 import '../services/driver_compliance_service.dart';
@@ -39,9 +42,43 @@ final driverComplianceServiceProvider = Provider<DriverComplianceService>((ref) 
 });
 
 /// Supabase auth stream (`onAuthStateChange`).
+///
+/// Invalid refresh tokens are cleared locally instead of erroring the whole app.
 final authProvider = StreamProvider<AuthState>((ref) {
   final client = ref.watch(supabaseClientProvider);
-  return client.auth.onAuthStateChange;
+  final controller = StreamController<AuthState>();
+
+  // Emit current snapshot so UI does not hang if the broadcast is quiet.
+  controller.add(
+    AuthState(AuthChangeEvent.initialSession, client.auth.currentSession),
+  );
+
+  final sub = client.auth.onAuthStateChange.listen(
+    controller.add,
+    onError: (Object e, StackTrace st) async {
+      if (isInvalidRefreshTokenError(e)) {
+        try {
+          await client.auth.signOut(scope: SignOutScope.local);
+        } catch (_) {}
+        if (!controller.isClosed) {
+          controller.add(
+            const AuthState(AuthChangeEvent.signedOut, null),
+          );
+        }
+        return;
+      }
+      if (!controller.isClosed) {
+        controller.addError(e, st);
+      }
+    },
+  );
+
+  ref.onDispose(() {
+    unawaited(sub.cancel());
+    unawaited(controller.close());
+  });
+
+  return controller.stream;
 });
 
 /// Signed-in driver profile; null when signed out or no row.

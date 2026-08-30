@@ -4,8 +4,10 @@ import 'package:intl/intl.dart';
 
 import '../../../shared/models/driver_enums.dart';
 import '../../../shared/models/vehicle_draft.dart';
+import '../../../shared/services/onboarding_payment_service.dart';
 import '../onboarding_notifier.dart';
 import '../onboarding_pick_helpers.dart';
+import '../widgets/vehicle_onboarding_fee_panel.dart';
 
 class VehicleStep extends ConsumerStatefulWidget {
   const VehicleStep({super.key, required this.profileId});
@@ -304,7 +306,7 @@ class _VehicleStepState extends ConsumerState<VehicleStep> {
                 .map(
                   (c) => DropdownMenuItem(
                     value: c,
-                    child: Text(vehicleCategoryToApi(c)),
+                    child: Text(vehicleCategoryLabel(c)),
                   ),
                 )
                 .toList(),
@@ -484,7 +486,12 @@ class _VehicleStepState extends ConsumerState<VehicleStep> {
               },
             ),
           ],
-          const SizedBox(height: 24),
+          VehicleOnboardingFeePanel(
+            profileId: widget.profileId,
+            category: v.category,
+            vehicleId: st.vehicleId,
+          ),
+          const SizedBox(height: 8),
           FilledButton(
             onPressed: st.isBusy
                 ? null

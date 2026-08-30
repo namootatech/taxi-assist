@@ -20,7 +20,7 @@ class AccountStatusScreen extends ConsumerWidget {
 
   String get _body => switch (profile.status) {
         DriverProfileStatus.rejected =>
-          'Your driver application was not approved. Review the reason below and contact Taxi Assist support if you need help.',
+          'Your driver application was not approved. Review the reason below and contact Trip support if you need help.',
         DriverProfileStatus.suspended =>
           'Your account is suspended. You cannot drive until this is resolved. Contact support.',
         DriverProfileStatus.deactivated =>

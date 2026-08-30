@@ -25,7 +25,24 @@ interface CampaignWizardProps {
   initial?: Partial<CampaignDraftInput> & { campaign_id?: string; payment_status?: string }
 }
 
-const STEPS = ["Details", "Package", "Creative", "Destination", "Review"] as const
+const STEPS = ["Details", "Package & pay", "Creative", "Destination", "Submit"] as const
+
+function packagePriceLabel(pkg: PartnerPackage): string {
+  if (pkg.package_kind === "subscription") {
+    const interval = pkg.billing_interval_days ?? 30
+    return `${formatZarFromCents(pkg.monthly_price_cents ?? pkg.base_price_cents)} / ${interval} days`
+  }
+  return `${formatZarFromCents(pkg.base_price_cents)} / 1,000 impressions`
+}
+
+function packageLimitsLabel(pkg: PartnerPackage): string {
+  if (pkg.package_kind === "subscription") {
+    const skip =
+      pkg.skip_after_seconds === 0 ? "skip available immediately" : `skip after ${pkg.skip_after_seconds}s`
+    return `Up to ${pkg.daily_impression_cap ?? 30} views/day · ${pkg.max_duration_seconds}s max · ${skip}`
+  }
+  return `Up to ${pkg.max_duration_seconds}s · skip after ${pkg.skip_after_seconds}s`
+}
 
 export function CampaignWizard({
   packages,
@@ -59,9 +76,21 @@ export function CampaignWizard({
   })
 
   const selectedPackage = packages.find((p) => p.id === form.watch("package_id"))
-  const impressions = form.watch("impressions")
+  const isSubscription = selectedPackage?.package_kind === "subscription"
+  const impressions = form.watch("impressions") ?? 1000
+
   const pricing = useMemo(() => {
     if (!selectedPackage) return null
+    if (selectedPackage.package_kind === "subscription") {
+      const total = selectedPackage.monthly_price_cents ?? selectedPackage.base_price_cents
+      return {
+        subtotal_cents: total,
+        discount_cents: 0,
+        total_cents: total,
+        bonus_impressions: 0,
+        cost_per_impression_cents: 0,
+      }
+    }
     const local = computeLocalPrice(
       selectedPackage.base_price_cents,
       selectedPackage.min_impressions,
@@ -76,7 +105,8 @@ export function CampaignWizard({
 
   const persistDraft = async (): Promise<string | undefined> => {
     const values = form.getValues()
-    const result = await saveCampaignDraft({ ...values, campaign_id: campaignId })
+    const payload = isSubscription ? { ...values, impressions: undefined } : values
+    const result = await saveCampaignDraft({ ...payload, campaign_id: campaignId })
     if (!result.success) {
       toast.error(result.message ?? "Could not save draft.")
       return undefined
@@ -88,7 +118,7 @@ export function CampaignWizard({
   const handleNext = () => {
     const fieldsByStep: Array<Array<keyof CampaignDraftInput>> = [
       ["advertiser", "company_name", "start_date", "end_date", "campaign_notes", "custom_requirements"],
-      ["package_id", "impressions"],
+      isSubscription ? ["package_id"] : ["package_id", "impressions"],
       ["creative_id"],
       ["destination_type", "destination_value"],
       [],
@@ -97,13 +127,15 @@ export function CampaignWizard({
       const valid = await form.trigger(fieldsByStep[step] as never)
       if (!valid) return
       const id = await persistDraft()
-      if (!id && step < 4) return
+      if (!id && step < STEPS.length - 1) return
       setStep((s) => Math.min(s + 1, STEPS.length - 1))
     })
   }
 
   const handlePay = () => {
     startTransition(async () => {
+      const valid = await form.trigger(isSubscription ? ["package_id"] : (["package_id", "impressions"] as never))
+      if (!valid) return
       const id = campaignId ?? (await persistDraft())
       if (!id) return
       await initiateCampaignPayment(id)
@@ -172,7 +204,7 @@ export function CampaignWizard({
 
         {step === 1 ? (
           <>
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {packages.map((pkg) => {
                 const selected = form.watch("package_id") === pkg.id
                 return (
@@ -189,48 +221,60 @@ export function CampaignWizard({
                   >
                     <div className="text-lg font-black">{pkg.name}</div>
                     <div className="mt-1 text-sm text-slate-300">{pkg.description}</div>
-                    <div className="mt-3 text-sm font-semibold">
-                      {formatZarFromCents(pkg.base_price_cents)} / 1,000 impressions
-                    </div>
-                    <div className="mt-1 text-xs text-slate-400">
-                      Up to {pkg.max_duration_seconds}s · skip after {pkg.skip_after_seconds}s
-                    </div>
+                    <div className="mt-3 text-sm font-semibold">{packagePriceLabel(pkg)}</div>
+                    <div className="mt-1 text-xs text-slate-400">{packageLimitsLabel(pkg)}</div>
                   </button>
                 )
               })}
             </div>
-            <Field label="Impressions" error={form.formState.errors.impressions?.message}>
-              <input
-                type="number"
-                min={1000}
-                step={100}
-                {...form.register("impressions", { valueAsNumber: true })}
-                className="field-input"
-              />
-            </Field>
+            {!isSubscription ? (
+              <Field label="Impressions" error={form.formState.errors.impressions?.message}>
+                <input
+                  type="number"
+                  min={1000}
+                  step={100}
+                  {...form.register("impressions", { valueAsNumber: true })}
+                  className="field-input"
+                />
+              </Field>
+            ) : null}
             {pricing ? (
               <div className="rounded-2xl border border-[var(--border)] bg-white/5 p-4 text-sm">
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>{formatZarFromCents(pricing.subtotal_cents)}</span>
-                </div>
-                {pricing.discount_cents > 0 ? (
-                  <div className="flex justify-between text-emerald-200">
-                    <span>Prelaunch discount ({prelaunchDiscountPct}%)</span>
-                    <span>-{formatZarFromCents(pricing.discount_cents)}</span>
+                {!isSubscription ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span>Subtotal</span>
+                      <span>{formatZarFromCents(pricing.subtotal_cents)}</span>
+                    </div>
+                    {pricing.discount_cents > 0 ? (
+                      <div className="flex justify-between text-emerald-200">
+                        <span>Prelaunch discount ({prelaunchDiscountPct}%)</span>
+                        <span>-{formatZarFromCents(pricing.discount_cents)}</span>
+                      </div>
+                    ) : null}
+                    {pricing.bonus_impressions > 0 ? (
+                      <div className="flex justify-between text-sky-200">
+                        <span>Bonus impressions</span>
+                        <span>+{pricing.bonus_impressions.toLocaleString()}</span>
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <div className="flex justify-between">
+                    <span>Starter subscription</span>
+                    <span>{formatZarFromCents(pricing.total_cents)} every 30 days</span>
                   </div>
-                ) : null}
-                {pricing.bonus_impressions > 0 ? (
-                  <div className="flex justify-between text-sky-200">
-                    <span>Bonus impressions</span>
-                    <span>+{pricing.bonus_impressions.toLocaleString()}</span>
-                  </div>
-                ) : null}
+                )}
                 <div className="mt-2 flex justify-between border-t border-[var(--border)] pt-2 text-base font-bold">
-                  <span>Total due</span>
+                  <span>Total due now</span>
                   <span>{formatZarFromCents(pricing.total_cents)}</span>
                 </div>
               </div>
+            ) : null}
+            {paymentStatus === "paid" ? (
+              <p className="rounded-2xl border border-emerald-400/40 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+                Payment complete. Continue to attach your creative and destination, then submit for review.
+              </p>
             ) : null}
           </>
         ) : null}
@@ -290,9 +334,9 @@ export function CampaignWizard({
             <Row label="Campaign" value={form.getValues("advertiser")} />
             <Row label="Company" value={form.getValues("company_name")} />
             <Row label="Package" value={selectedPackage?.name ?? "—"} />
-            <Row label="Impressions" value={impressions.toLocaleString()} />
-            {pricing ? <Row label="Total" value={formatZarFromCents(pricing.total_cents)} /> : null}
-            <Row label="Payment" value={paymentStatus === "paid" ? "Paid" : "Pending"} />
+            {!isSubscription ? <Row label="Impressions" value={impressions.toLocaleString()} /> : null}
+            {pricing ? <Row label="Total paid" value={formatZarFromCents(pricing.total_cents)} /> : null}
+            <Row label="Payment" value={paymentStatus === "paid" ? "Paid" : "Pending — return to Package & pay"} />
           </div>
         ) : null}
 
@@ -308,7 +352,33 @@ export function CampaignWizard({
             </button>
           ) : null}
 
-          {step < STEPS.length - 1 ? (
+          {step === 1 && paymentStatus !== "paid" ? (
+            <>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={handlePay}
+                className="focus-ring inline-flex items-center gap-2 rounded-full bg-[var(--brand-red)] px-5 py-3 text-sm font-black text-white disabled:opacity-60"
+              >
+                <CreditCard className="h-4 w-4" />
+                {pending
+                  ? "Redirecting..."
+                  : pricing
+                    ? `Pay ${formatZarFromCents(pricing.total_cents)} with Payfast`
+                    : "Pay with Payfast"}
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={handleNext}
+                className="focus-ring inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-5 py-3 text-sm font-semibold"
+              >
+                {pending ? "Saving..." : "Save & continue without paying"} <ChevronRight className="h-4 w-4" />
+              </button>
+            </>
+          ) : null}
+
+          {step !== 1 && step < STEPS.length - 1 ? (
             <button
               type="button"
               disabled={pending}
@@ -316,17 +386,6 @@ export function CampaignWizard({
               className="focus-ring inline-flex items-center gap-2 rounded-full bg-[var(--brand-red)] px-5 py-3 text-sm font-black text-white disabled:opacity-60"
             >
               {pending ? "Saving..." : "Save & continue"} <ChevronRight className="h-4 w-4" />
-            </button>
-          ) : null}
-
-          {step === STEPS.length - 1 && paymentStatus !== "paid" ? (
-            <button
-              type="button"
-              disabled={pending}
-              onClick={handlePay}
-              className="focus-ring inline-flex items-center gap-2 rounded-full bg-[var(--brand-red)] px-5 py-3 text-sm font-black text-white disabled:opacity-60"
-            >
-              <CreditCard className="h-4 w-4" /> {pending ? "Redirecting..." : "Pay with Payfast"}
             </button>
           ) : null}
 
@@ -338,6 +397,17 @@ export function CampaignWizard({
               className="focus-ring rounded-full bg-emerald-600 px-5 py-3 text-sm font-black text-white disabled:opacity-60"
             >
               {pending ? "Submitting..." : "Submit for review"}
+            </button>
+          ) : null}
+
+          {step === STEPS.length - 1 && paymentStatus !== "paid" ? (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => setStep(1)}
+              className="focus-ring inline-flex items-center gap-2 rounded-full border border-amber-400/50 px-5 py-3 text-sm font-semibold text-amber-100"
+            >
+              <CreditCard className="h-4 w-4" /> Complete payment on Package & pay
             </button>
           ) : null}
         </div>

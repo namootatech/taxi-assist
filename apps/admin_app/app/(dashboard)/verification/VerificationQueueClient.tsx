@@ -48,6 +48,9 @@ type VehicleRow = {
   owner_details: unknown | null;
   company_details: unknown | null;
   status: string | null;
+  onboarding_fee_status: string | null;
+  onboarding_fee_waived_until: string | null;
+  onboarding_fee_paid_until: string | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -107,6 +110,17 @@ function vehicleLabel(v: VehicleRow) {
   const makeModel = `${v.make ?? ""} ${v.model ?? ""}`.trim();
   if (reg && makeModel) return `${reg} • ${makeModel}`;
   return reg || makeModel || `Vehicle ${shortId(v.vehicle_id)}`;
+}
+
+function onboardingFeeLabel(v: VehicleRow) {
+  const status = v.onboarding_fee_status ?? "waived_first_year";
+  if (status === "paid") return "Fee paid";
+  if (status === "due" || status === "overdue") return "Fee due";
+  if (v.onboarding_fee_waived_until) {
+    const until = new Date(v.onboarding_fee_waived_until);
+    if (until.getTime() > Date.now()) return "First year free";
+  }
+  return status.replaceAll("_", " ");
 }
 
 function flattenDocs(c: DriverVerificationCase) {
@@ -513,7 +527,7 @@ export function VerificationQueueClient({
                         return (
                           <div key={v.vehicle_id} className="rounded-xl border border-token p-3">
                             <div className="truncate text-sm font-semibold">{vehicleLabel(v)}</div>
-                            <div className="mt-1 text-xs muted">{v.category ?? "—"} • {v.status ?? "—"}</div>
+                            <div className="mt-1 text-xs muted">{v.category ?? "—"} • {v.status ?? "—"} • {onboardingFeeLabel(v)}</div>
                             <div className="mt-3 space-y-2">
                               {docs.length ? (
                                 docs.map((d) => (
@@ -644,7 +658,7 @@ export function VerificationQueueClient({
                               <div className="truncate text-sm font-semibold">{vehicleLabel(v)}</div>
                               <div className="mt-1 text-xs muted">
                                 {v.colour ? `${v.colour} • ` : ""}
-                                {v.category ?? "—"} • {v.status ?? "—"}
+                                {v.category ?? "—"} • {v.status ?? "—"} • {onboardingFeeLabel(v)}
                               </div>
                             </div>
                             <div className="flex shrink-0 flex-col items-end gap-1">

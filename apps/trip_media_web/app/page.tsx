@@ -51,7 +51,7 @@ export default function LandingPage() {
       <section className='grid flex-1 items-center gap-10 py-16 md:grid-cols-[0.9fr_1.1fr]'>
         <div>
           <p className='text-sm font-black uppercase tracking-[0.28em] text-red-200'>
-            Taxi Assist Media
+            Trip Media
           </p>
           <h1 className='mt-5 text-5xl font-black leading-[0.95] tracking-[-0.06em] md:text-7xl'>
             Put your brand inside real trips.

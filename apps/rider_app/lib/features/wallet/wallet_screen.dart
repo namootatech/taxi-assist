@@ -66,7 +66,7 @@ class WalletScreen extends ConsumerWidget {
                 data: (rows) {
                   if (rows.isEmpty) {
                     return const Text(
-                      'No credits yet. Watch Taxi Assist Media during trips to earn.',
+                      'No credits yet. Watch Trip Media during trips to earn.',
                     );
                   }
                   return Column(

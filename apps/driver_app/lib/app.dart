@@ -26,7 +26,7 @@ class TaxiAssistDriverApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
     return MaterialApp(
-      title: 'Taxi Assist Driver',
+      title: 'Trip Driver',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
@@ -150,7 +150,30 @@ class _AppHome extends ConsumerWidget {
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        body: Center(child: Text(safeMessage(e))),
+        body: Center(
+          child: Padding(
+            padding: AppSpacing.screenPadding,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(safeMessage(e), textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: () async {
+                    try {
+                      await ref
+                          .read(supabaseServiceProvider)
+                          .signOut();
+                    } catch (_) {}
+                    ref.invalidate(authProvider);
+                    ref.invalidate(currentDriverProvider);
+                  },
+                  child: const Text('Sign in again'),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

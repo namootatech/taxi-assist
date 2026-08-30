@@ -19,10 +19,10 @@ export interface MarketingPageContent {
 
 export const marketingPages: Record<"about" | "riders" | "drivers" | "advertise", MarketingPageContent> = {
   about: {
-    eyebrow: "About Trip / Taxi Assist",
+    eyebrow: "About Trip",
     title: "A safer, clearer way to move through South Africa.",
     description:
-      "Trip / Taxi Assist is being built around verified drivers, clear trip information, and payment choices that fit local habits.",
+      "Trip is being built around verified drivers, clear trip information, and payment choices that fit local habits.",
     primaryCta: "Contact the team",
     primaryHref: "/contact",
     sections: [
@@ -38,7 +38,7 @@ export const marketingPages: Record<"about" | "riders" | "drivers" | "advertise"
       },
       {
         title: "Media with purpose",
-        body: "Taxi Assist Media creates a path for brands to fund useful rider credits without weakening trip safety rules.",
+        body: "Trip Media creates a path for brands to fund useful rider credits without weakening trip safety rules.",
         icon: Megaphone,
       },
     ],
@@ -98,7 +98,7 @@ export const marketingPages: Record<"about" | "riders" | "drivers" | "advertise"
     ],
   },
   advertise: {
-    eyebrow: "Taxi Assist Media",
+    eyebrow: "Trip Media",
     title: "Reach riders while they are already in motion.",
     description:
       "Trip Media helps partners prepare in-trip campaigns around attention, timing, and trust.",
