@@ -52,7 +52,9 @@ on conflict (slug) do update set
 -- ---------------------------------------------------------------------------
 -- 2. Partner-facing package view (campaign + subscription)
 -- ---------------------------------------------------------------------------
-create or replace view public.vw_partner_ad_packages
+drop view if exists public.vw_partner_ad_packages;
+
+create view public.vw_partner_ad_packages
 with (security_invoker = true)
 as
 select
